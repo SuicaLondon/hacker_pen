@@ -1,0 +1,7 @@
+{
+  "dart.flutterSdkPath": "/Users/suica/Projects/hacker_pen/.fvm/flutter_sdk",
+  "dart.sdkPath": "/Users/suica/Projects/hacker_pen/.fvm/flutter_sdk/bin/cache/dart-sdk",
+  "terminal.integrated.env.osx": {
+    "PATH": "/Users/suica/Projects/hacker_pen/.fvm/flutter_sdk/bin:${env:PATH}"
+  }
+}
