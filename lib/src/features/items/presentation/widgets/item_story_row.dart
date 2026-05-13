@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/time_formatter.dart';
 import '../../../../core/domain/hn_item.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/time_formatter.dart';
 
 class ItemStoryRow extends StatelessWidget {
   const ItemStoryRow({
@@ -18,9 +18,10 @@ class ItemStoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final metaStyle = const TextStyle(
+    final palette = context.palette;
+    final metaStyle = TextStyle(
       fontFamily: '.SF Pro Text',
-      color: AppColors.textSecondary,
+      color: palette.textSecondary,
       fontSize: 14,
       fontWeight: FontWeight.w400,
       height: 1.2,
@@ -30,7 +31,7 @@ class ItemStoryRow extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -41,25 +42,25 @@ class ItemStoryRow extends StatelessWidget {
                 children: [
                   Text(
                     '$rank',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: '.SF Pro Display',
-                      color: AppColors.brandOrange,
+                      color: palette.brandOrange,
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       height: 1,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Icon(
+                  Icon(
                     Icons.keyboard_arrow_up,
-                    color: AppColors.brandOrange,
+                    color: palette.brandOrange,
                     size: 14,
                   ),
                   Text(
                     '${item.score}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: '.SF Pro Display',
-                      color: AppColors.brandOrange,
+                      color: palette.brandOrange,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       height: 1,
@@ -75,9 +76,9 @@ class ItemStoryRow extends StatelessWidget {
                 children: [
                   Text(
                     item.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: '.SF Pro Display',
-                      color: AppColors.textPrimary,
+                      color: palette.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       height: 1.24,
@@ -86,12 +87,12 @@ class ItemStoryRow extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Text(_host(item.url), style: metaStyle),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 5),
                   Text(
-                    'by ${item.by} ${TimeFormatter.relativeFromUnixSeconds(item.time)}',
+                    '${_host(item.url)} · by ${item.by} · ${TimeFormatter.relativeFromUnixSeconds(item.time)}',
                     style: metaStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -101,17 +102,17 @@ class ItemStoryRow extends StatelessWidget {
               padding: const EdgeInsets.only(top: 4),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.mode_comment_outlined,
-                    color: AppColors.textSecondary,
+                    color: palette.textSecondary,
                     size: 18,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     '${item.descendants}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: '.SF Pro Text',
-                      color: AppColors.textSecondary,
+                      color: palette.textSecondary,
                       fontSize: 14,
                       height: 1.1,
                     ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 
 class ItemsHeader extends StatelessWidget {
   const ItemsHeader({
@@ -16,36 +16,39 @@ class ItemsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final topInset = MediaQuery.paddingOf(context).top;
+
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF101010), AppColors.background],
+          colors: [palette.surface, palette.background],
         ),
       ),
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 12, 8),
+            padding: EdgeInsets.fromLTRB(16, topInset + 10, 12, 8),
             child: Row(
               children: [
                 RichText(
-                  text: const TextSpan(
-                    style: TextStyle(
+                  text: TextSpan(
+                    style: const TextStyle(
                       fontFamily: '.SF Pro Display',
                       fontSize: 34,
                       fontWeight: FontWeight.w800,
                       height: 1,
                     ),
                     children: [
-                      TextSpan(
+                      const TextSpan(
                         text: 'Hacker',
                         style: TextStyle(color: Colors.white),
                       ),
                       TextSpan(
                         text: 'Pen',
-                        style: TextStyle(color: AppColors.brandOrange),
+                        style: TextStyle(color: palette.brandOrange),
                       ),
                     ],
                   ),
@@ -55,10 +58,14 @@ class ItemsHeader extends StatelessWidget {
                   onPressed: () {},
                   icon: const Icon(Icons.search, color: Colors.white),
                 ),
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 12,
-                  backgroundColor: AppColors.brandOrange,
-                  child: Icon(Icons.person, size: 14, color: Colors.black),
+                  backgroundColor: palette.brandOrange,
+                  child: const Icon(
+                    Icons.person,
+                    size: 14,
+                    color: Colors.black,
+                  ),
                 ),
               ],
             ),
@@ -82,8 +89,8 @@ class ItemsHeader extends StatelessWidget {
                         style: TextStyle(
                           fontFamily: '.SF Pro Text',
                           color: isSelected
-                              ? AppColors.brandOrange
-                              : AppColors.textMuted,
+                              ? palette.brandOrange
+                              : palette.textMuted,
                           fontSize: 17,
                           height: 1.1,
                           fontWeight: isSelected
@@ -97,7 +104,7 @@ class ItemsHeader extends StatelessWidget {
                         width: 26,
                         height: 2,
                         color: isSelected
-                            ? AppColors.brandOrange
+                            ? palette.brandOrange
                             : Colors.transparent,
                       ),
                     ],
@@ -106,7 +113,7 @@ class ItemsHeader extends StatelessWidget {
               },
             ),
           ),
-          const Divider(height: 1, color: AppColors.divider),
+          Divider(height: 1, color: palette.divider),
         ],
       ),
     );

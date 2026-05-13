@@ -63,6 +63,7 @@ Guidelines:
 - `features/*` contains feature-specific data, domain, and presentation code.
 - Shared domain types such as `HnItem` and `StoryType` belong in `core/domain`, not inside one feature.
 - Feature UI should not call HTTP APIs directly. Use repositories and cubits.
+- Server-state fetching and caching belongs in `ApiClient`, using `cached_query`. Feature API services should map domain endpoints and decode responses.
 - Keep platform folders close to Flutter defaults unless a platform-specific permission, entitlement, signing, or app identity change is required.
 
 ## Flutter Style
@@ -92,6 +93,8 @@ fvm dart format lib test
 fvm flutter analyze
 fvm flutter test
 ```
+
+Network requests are cached in memory with `cached_query`. Keep cache keys stable, serializable, and semantic in the TanStack Query style. Prefer keys from `HnQueryKeys`, such as `['hn', 'item', id]` and `['hn', 'storyIds', type.name]`; endpoint paths are fetcher details, not cache-key design.
 
 ## Platform Notes
 

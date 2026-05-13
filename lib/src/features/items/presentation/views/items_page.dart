@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/domain/story_type.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../item_detail/presentation/views/item_detail_page.dart';
 import '../cubit/items_cubit.dart';
 import '../cubit/items_state.dart';
@@ -42,15 +42,18 @@ class _ItemsPageState extends State<ItemsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: AppColors.background,
+      value: SystemUiOverlayStyle(
+        statusBarColor: palette.surface,
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: palette.background,
         body: SafeArea(
+          top: false,
           child: Column(
             children: [
               ItemsHeader(
@@ -82,16 +85,15 @@ class _ItemsPageState extends State<ItemsPage> {
                           );
                         }
                         return RefreshIndicator(
-                          color: AppColors.brandOrange,
+                          color: palette.brandOrange,
                           onRefresh: () =>
                               context.read<ItemsCubit>().loadItems(),
                           child: ListView.separated(
+                            padding: EdgeInsets.zero,
                             physics: const AlwaysScrollableScrollPhysics(),
                             itemCount: state.items.length,
-                            separatorBuilder: (_, _) => const Divider(
-                              height: 1,
-                              color: AppColors.divider,
-                            ),
+                            separatorBuilder: (_, _) =>
+                                Divider(height: 1, color: palette.divider),
                             itemBuilder: (context, index) {
                               final item = state.items[index];
                               return ItemStoryRow(

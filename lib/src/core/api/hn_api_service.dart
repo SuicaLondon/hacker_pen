@@ -1,48 +1,69 @@
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
-
 import '../domain/hn_item.dart';
 import '../domain/story_type.dart';
-import 'hn_api_exception.dart';
+import 'api_client.dart';
+import 'api_exception.dart';
+import 'hn_query_keys.dart';
 import 'models/hn_updates.dart';
 import 'models/hn_user.dart';
 
 class HnApiService {
-  HnApiService({http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client();
+  HnApiService({ApiClient? apiClient})
+    : _apiClient =
+          apiClient ??
+          ApiClient(baseUrl: 'https://hacker-news.firebaseio.com/v0/');
 
-  static const String _baseUrl = 'https://hacker-news.firebaseio.com/v0';
-  final http.Client _httpClient;
+  final ApiClient _apiClient;
 
   Future<HnItem> getItem(int id) async {
-    final json = await _getJsonMap('/item/$id.json');
+    final json = await _apiClient.getJson<Map<String, dynamic>>(
+      queryKey: HnQueryKeys.item(id),
+      path: '/item/$id.json',
+      decode: _decodeMap('/item/$id.json'),
+    );
     return HnItem.fromJson(json);
   }
 
   Future<HnUser> getUser(String id) async {
-    final json = await _getJsonMap('/user/$id.json');
+    final json = await _apiClient.getJson<Map<String, dynamic>>(
+      queryKey: HnQueryKeys.user(id),
+      path: '/user/$id.json',
+      decode: _decodeMap('/user/$id.json'),
+    );
     return HnUser.fromJson(json);
   }
 
   Future<int> getMaxItemId() async {
-    return _getJsonInt('/maxitem.json');
+    return _apiClient.getJson<int>(
+      queryKey: HnQueryKeys.maxItemId,
+      path: '/maxitem.json',
+      decode: _decodeInt('/maxitem.json'),
+    );
   }
 
-  Future<List<int>> getTopStories() => _getJsonIntList('/topstories.json');
+  Future<List<int>> getTopStories() =>
+      _getStoryIds(type: StoryType.top, path: '/topstories.json');
 
-  Future<List<int>> getNewStories() => _getJsonIntList('/newstories.json');
+  Future<List<int>> getNewStories() =>
+      _getStoryIds(type: StoryType.newStories, path: '/newstories.json');
 
-  Future<List<int>> getBestStories() => _getJsonIntList('/beststories.json');
+  Future<List<int>> getBestStories() =>
+      _getStoryIds(type: StoryType.best, path: '/beststories.json');
 
-  Future<List<int>> getAskStories() => _getJsonIntList('/askstories.json');
+  Future<List<int>> getAskStories() =>
+      _getStoryIds(type: StoryType.ask, path: '/askstories.json');
 
-  Future<List<int>> getShowStories() => _getJsonIntList('/showstories.json');
+  Future<List<int>> getShowStories() =>
+      _getStoryIds(type: StoryType.show, path: '/showstories.json');
 
-  Future<List<int>> getJobStories() => _getJsonIntList('/jobstories.json');
+  Future<List<int>> getJobStories() =>
+      _getStoryIds(type: StoryType.job, path: '/jobstories.json');
 
   Future<HnUpdates> getUpdates() async {
-    final json = await _getJsonMap('/updates.json');
+    final json = await _apiClient.getJson<Map<String, dynamic>>(
+      queryKey: HnQueryKeys.updates,
+      path: '/updates.json',
+      decode: _decodeMap('/updates.json'),
+    );
     return HnUpdates.fromJson(json);
   }
 
@@ -63,60 +84,44 @@ class HnApiService {
     }
   }
 
-  Future<Map<String, dynamic>> _getJsonMap(String path) async {
-    final uri = Uri.parse('$_baseUrl$path');
-    final response = await _httpClient.get(uri);
-
-    if (response.statusCode != 200) {
-      throw HnApiException(
-        'Request failed for $path',
-        statusCode: response.statusCode,
-      );
-    }
-
-    final dynamic decoded = jsonDecode(response.body);
-    if (decoded is! Map<String, dynamic>) {
-      throw HnApiException('Unexpected map response for $path');
-    }
-
-    return decoded;
+  Future<List<int>> _getStoryIds({
+    required StoryType type,
+    required String path,
+  }) {
+    return _apiClient.getJson<List<int>>(
+      queryKey: HnQueryKeys.storyIds(type),
+      path: path,
+      decode: _decodeIntList(path),
+    );
   }
 
-  Future<List<int>> _getJsonIntList(String path) async {
-    final uri = Uri.parse('$_baseUrl$path');
-    final response = await _httpClient.get(uri);
+  Map<String, dynamic> Function(dynamic json) _decodeMap(String path) {
+    return (json) {
+      if (json is! Map<String, dynamic>) {
+        throw ApiException('Unexpected map response for $path');
+      }
 
-    if (response.statusCode != 200) {
-      throw HnApiException(
-        'Request failed for $path',
-        statusCode: response.statusCode,
-      );
-    }
-
-    final dynamic decoded = jsonDecode(response.body);
-    if (decoded is! List<dynamic>) {
-      throw HnApiException('Unexpected list response for $path');
-    }
-
-    return decoded.whereType<int>().toList(growable: false);
+      return json;
+    };
   }
 
-  Future<int> _getJsonInt(String path) async {
-    final uri = Uri.parse('$_baseUrl$path');
-    final response = await _httpClient.get(uri);
+  List<int> Function(dynamic json) _decodeIntList(String path) {
+    return (json) {
+      if (json is! List<dynamic>) {
+        throw ApiException('Unexpected list response for $path');
+      }
 
-    if (response.statusCode != 200) {
-      throw HnApiException(
-        'Request failed for $path',
-        statusCode: response.statusCode,
-      );
-    }
+      return json.whereType<int>().toList(growable: false);
+    };
+  }
 
-    final dynamic decoded = jsonDecode(response.body);
-    if (decoded is! int) {
-      throw HnApiException('Unexpected int response for $path');
-    }
+  int Function(dynamic json) _decodeInt(String path) {
+    return (json) {
+      if (json is! int) {
+        throw ApiException('Unexpected int response for $path');
+      }
 
-    return decoded;
+      return json;
+    };
   }
 }

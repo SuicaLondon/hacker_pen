@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../data/item_detail_repository.dart';
 import '../cubit/item_detail_cubit.dart';
 import '../cubit/item_detail_state.dart';
@@ -29,10 +29,12 @@ class _ItemDetailView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: palette.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: palette.background,
         title: const Text('Story'),
       ),
       body: BlocBuilder<ItemDetailCubit, ItemDetailState>(
@@ -57,20 +59,20 @@ class _ItemDetailView extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     'Comments ${detail.story.descendants}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: '.SF Pro Display',
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: palette.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   if (detail.comments.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 12),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 12),
                       child: Text(
                         'No comments yet.',
-                        style: TextStyle(color: AppColors.textSecondary),
+                        style: TextStyle(color: palette.textSecondary),
                       ),
                     )
                   else

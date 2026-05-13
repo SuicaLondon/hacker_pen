@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'core/api/api_client.dart';
 import 'core/api/hn_api_service.dart';
-import 'core/theme/app_colors.dart';
+import 'core/theme/app_theme.dart';
 import 'features/item_detail/data/item_detail_repository.dart';
 import 'features/items/data/items_repository.dart';
 import 'features/items/presentation/cubit/items_cubit.dart';
@@ -15,7 +16,14 @@ class HackerPenApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
       providers: [
-        RepositoryProvider(create: (_) => HnApiService()),
+        RepositoryProvider(
+          create: (_) =>
+              ApiClient(baseUrl: 'https://hacker-news.firebaseio.com/v0/'),
+        ),
+        RepositoryProvider(
+          create: (context) =>
+              HnApiService(apiClient: context.read<ApiClient>()),
+        ),
         RepositoryProvider(
           create: (context) => ItemsRepository(context.read<HnApiService>()),
         ),
@@ -30,20 +38,7 @@ class HackerPenApp extends StatelessWidget {
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'HackerPen',
-          theme: ThemeData(
-            fontFamily: '.SF Pro Text',
-            brightness: Brightness.dark,
-            scaffoldBackgroundColor: AppColors.background,
-            dividerColor: AppColors.divider,
-            appBarTheme: const AppBarTheme(
-              backgroundColor: AppColors.background,
-              elevation: 0,
-            ),
-            colorScheme: const ColorScheme.dark(
-              primary: AppColors.brandOrange,
-              surface: AppColors.surface,
-            ),
-          ),
+          theme: AppTheme.dark(),
           home: const ItemsPage(),
         ),
       ),
