@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/domain/story_type.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../item_detail/presentation/views/item_detail_page.dart';
 import '../cubit/items_cubit.dart';
 import '../cubit/items_state.dart';
@@ -42,16 +41,17 @@ class _ItemsPageState extends State<ItemsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
+    final theme = Theme.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
-        statusBarColor: palette.surface,
+        statusBarColor: colorScheme.surface,
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: palette.background,
+        backgroundColor: theme.scaffoldBackgroundColor,
         body: SafeArea(
           top: false,
           child: Column(
@@ -85,7 +85,7 @@ class _ItemsPageState extends State<ItemsPage> {
                           );
                         }
                         return RefreshIndicator(
-                          color: palette.brandOrange,
+                          color: colorScheme.primary,
                           onRefresh: () =>
                               context.read<ItemsCubit>().loadItems(),
                           child: ListView.separated(
@@ -93,7 +93,7 @@ class _ItemsPageState extends State<ItemsPage> {
                             physics: const AlwaysScrollableScrollPhysics(),
                             itemCount: state.items.length,
                             separatorBuilder: (_, _) =>
-                                Divider(height: 1, color: palette.divider),
+                                const Divider(height: 1),
                             itemBuilder: (context, index) {
                               final item = state.items[index];
                               return ItemStoryRow(

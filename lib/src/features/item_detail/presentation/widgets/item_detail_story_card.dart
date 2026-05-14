@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/domain/hn_item.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/text_sanitizer.dart';
 import '../../../../core/utils/time_formatter.dart';
 
@@ -12,15 +11,15 @@ class ItemDetailStoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
+    final colorScheme = Theme.of(context).colorScheme;
     final bodyText = TextSanitizer.stripHtml(story.text);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       decoration: BoxDecoration(
-        color: palette.surface,
-        border: Border.all(color: palette.divider),
+        color: colorScheme.surface,
+        border: Border.all(color: colorScheme.outline),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -33,7 +32,7 @@ class ItemDetailStoryCard extends StatelessWidget {
               fontSize: 26,
               fontWeight: FontWeight.w700,
               height: 1.15,
-              color: palette.textPrimary,
+              color: colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -42,7 +41,7 @@ class ItemDetailStoryCard extends StatelessWidget {
             style: TextStyle(
               fontFamily: '.SF Pro Text',
               fontSize: 14,
-              color: palette.textSecondary,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
           if (story.url != null) ...[
@@ -52,7 +51,7 @@ class ItemDetailStoryCard extends StatelessWidget {
               style: TextStyle(
                 fontFamily: '.SF Pro Text',
                 fontSize: 14,
-                color: palette.brandOrange,
+                color: colorScheme.primary,
               ),
             ),
           ],
@@ -63,7 +62,7 @@ class ItemDetailStoryCard extends StatelessWidget {
               style: TextStyle(
                 fontFamily: '.SF Pro Text',
                 fontSize: 16,
-                color: palette.textPrimary,
+                color: colorScheme.onSurface,
                 height: 1.45,
               ),
             ),

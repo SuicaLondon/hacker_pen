@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
-
 class ItemsHeader extends StatelessWidget {
   const ItemsHeader({
     required this.selectedTab,
@@ -16,7 +14,8 @@ class ItemsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
+    final theme = Theme.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
     final topInset = MediaQuery.paddingOf(context).top;
 
     return Container(
@@ -24,7 +23,7 @@ class ItemsHeader extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [palette.surface, palette.background],
+          colors: [colorScheme.surface, theme.scaffoldBackgroundColor],
         ),
       ),
       child: Column(
@@ -48,7 +47,7 @@ class ItemsHeader extends StatelessWidget {
                       ),
                       TextSpan(
                         text: 'Pen',
-                        style: TextStyle(color: palette.brandOrange),
+                        style: TextStyle(color: colorScheme.primary),
                       ),
                     ],
                   ),
@@ -60,7 +59,7 @@ class ItemsHeader extends StatelessWidget {
                 ),
                 CircleAvatar(
                   radius: 12,
-                  backgroundColor: palette.brandOrange,
+                  backgroundColor: colorScheme.primary,
                   child: const Icon(
                     Icons.person,
                     size: 14,
@@ -89,8 +88,8 @@ class ItemsHeader extends StatelessWidget {
                         style: TextStyle(
                           fontFamily: '.SF Pro Text',
                           color: isSelected
-                              ? palette.brandOrange
-                              : palette.textMuted,
+                              ? colorScheme.primary
+                              : colorScheme.outlineVariant,
                           fontSize: 17,
                           height: 1.1,
                           fontWeight: isSelected
@@ -104,7 +103,7 @@ class ItemsHeader extends StatelessWidget {
                         width: 26,
                         height: 2,
                         color: isSelected
-                            ? palette.brandOrange
+                            ? colorScheme.primary
                             : Colors.transparent,
                       ),
                     ],
@@ -113,7 +112,7 @@ class ItemsHeader extends StatelessWidget {
               },
             ),
           ),
-          Divider(height: 1, color: palette.divider),
+          const Divider(height: 1),
         ],
       ),
     );

@@ -111,7 +111,13 @@ class AppTheme {
       colorScheme: ColorScheme.dark(
         primary: palette.brandOrange,
         surface: palette.surface,
+        surfaceContainer: palette.backgroundElevated,
+        surfaceContainerLow: palette.commentSurface,
+        surfaceContainerHigh: palette.commentSurfaceAlt,
         onSurface: palette.textPrimary,
+        onSurfaceVariant: palette.textSecondary,
+        outline: palette.divider,
+        outlineVariant: palette.textMuted,
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: palette.background,
@@ -139,6 +145,7 @@ class AppTheme {
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: palette.brandOrange,
       ),
+      dividerTheme: DividerThemeData(color: palette.divider, thickness: 1),
       extensions: const [palette],
     );
   }

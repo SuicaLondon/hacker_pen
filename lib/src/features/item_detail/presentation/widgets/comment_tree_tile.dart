@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/text_sanitizer.dart';
 import '../../../../core/utils/time_formatter.dart';
 import '../../domain/comment_node.dart';
@@ -13,7 +12,7 @@ class CommentTreeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
+    final colorScheme = Theme.of(context).colorScheme;
     final marginLeft = (depth * 14).clamp(0, 42).toDouble();
     final text = TextSanitizer.stripHtml(node.comment.text);
 
@@ -31,10 +30,10 @@ class CommentTreeTile extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
         decoration: BoxDecoration(
           color: depth.isEven
-              ? palette.commentSurface
-              : palette.commentSurfaceAlt,
+              ? colorScheme.surfaceContainerLow
+              : colorScheme.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: palette.divider),
+          border: Border.all(color: colorScheme.outline),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,7 +42,7 @@ class CommentTreeTile extends StatelessWidget {
               '${node.comment.by} · ${TimeFormatter.relativeFromUnixSeconds(node.comment.time)}',
               style: TextStyle(
                 fontFamily: '.SF Pro Text',
-                color: palette.textSecondary,
+                color: colorScheme.onSurfaceVariant,
                 fontSize: 13,
               ),
             ),
@@ -52,7 +51,7 @@ class CommentTreeTile extends StatelessWidget {
               text,
               style: TextStyle(
                 fontFamily: '.SF Pro Text',
-                color: palette.textPrimary,
+                color: colorScheme.onSurface,
                 fontSize: 15,
                 height: 1.4,
               ),

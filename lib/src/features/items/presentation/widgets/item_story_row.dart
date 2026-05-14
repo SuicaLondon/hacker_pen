@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/domain/hn_item.dart';
-import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/time_formatter.dart';
 
 class ItemStoryRow extends StatelessWidget {
@@ -18,10 +17,10 @@ class ItemStoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
+    final colorScheme = Theme.of(context).colorScheme;
     final metaStyle = TextStyle(
       fontFamily: '.SF Pro Text',
-      color: palette.textSecondary,
+      color: colorScheme.onSurfaceVariant,
       fontSize: 14,
       fontWeight: FontWeight.w400,
       height: 1.2,
@@ -44,7 +43,7 @@ class ItemStoryRow extends StatelessWidget {
                     '$rank',
                     style: TextStyle(
                       fontFamily: '.SF Pro Display',
-                      color: palette.brandOrange,
+                      color: colorScheme.primary,
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       height: 1,
@@ -53,14 +52,14 @@ class ItemStoryRow extends StatelessWidget {
                   const SizedBox(height: 8),
                   Icon(
                     Icons.keyboard_arrow_up,
-                    color: palette.brandOrange,
+                    color: colorScheme.primary,
                     size: 14,
                   ),
                   Text(
                     '${item.score}',
                     style: TextStyle(
                       fontFamily: '.SF Pro Display',
-                      color: palette.brandOrange,
+                      color: colorScheme.primary,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                       height: 1,
@@ -78,7 +77,7 @@ class ItemStoryRow extends StatelessWidget {
                     item.title,
                     style: TextStyle(
                       fontFamily: '.SF Pro Display',
-                      color: palette.textPrimary,
+                      color: colorScheme.onSurface,
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       height: 1.24,
@@ -104,7 +103,7 @@ class ItemStoryRow extends StatelessWidget {
                 children: [
                   Icon(
                     Icons.mode_comment_outlined,
-                    color: palette.textSecondary,
+                    color: colorScheme.onSurfaceVariant,
                     size: 18,
                   ),
                   const SizedBox(width: 4),
@@ -112,7 +111,7 @@ class ItemStoryRow extends StatelessWidget {
                     '${item.descendants}',
                     style: TextStyle(
                       fontFamily: '.SF Pro Text',
-                      color: palette.textSecondary,
+                      color: colorScheme.onSurfaceVariant,
                       fontSize: 14,
                       height: 1.1,
                     ),
@@ -127,8 +126,8 @@ class ItemStoryRow extends StatelessWidget {
   }
 
   String _host(String? url) {
-    if (url == null || url.isEmpty) return 'news.ycombinator.com';
+    if (url == null || url.isEmpty) return '--';
     final uri = Uri.tryParse(url);
-    return uri?.host.isNotEmpty == true ? uri!.host : 'news.ycombinator.com';
+    return uri?.host.isNotEmpty == true ? uri!.host : '--';
   }
 }

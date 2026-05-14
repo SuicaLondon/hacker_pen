@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_theme.dart';
-
 class ItemsErrorView extends StatelessWidget {
   const ItemsErrorView({
     required this.message,
@@ -14,7 +12,7 @@ class ItemsErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Center(
       child: Padding(
@@ -32,7 +30,7 @@ class ItemsErrorView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(color: palette.textSecondary),
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 16),
             ElevatedButton(onPressed: onRetry, child: const Text('Try again')),

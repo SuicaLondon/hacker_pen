@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/theme/app_theme.dart';
 import '../../data/item_detail_repository.dart';
 import '../cubit/item_detail_cubit.dart';
 import '../cubit/item_detail_state.dart';
@@ -29,12 +28,13 @@ class _ItemDetailView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: palette.background,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: palette.background,
+        backgroundColor: theme.scaffoldBackgroundColor,
         title: const Text('Story'),
       ),
       body: BlocBuilder<ItemDetailCubit, ItemDetailState>(
@@ -63,7 +63,7 @@ class _ItemDetailView extends StatelessWidget {
                       fontFamily: '.SF Pro Display',
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
-                      color: palette.textPrimary,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -72,7 +72,7 @@ class _ItemDetailView extends StatelessWidget {
                       padding: const EdgeInsets.only(top: 12),
                       child: Text(
                         'No comments yet.',
-                        style: TextStyle(color: palette.textSecondary),
+                        style: TextStyle(color: colorScheme.onSurfaceVariant),
                       ),
                     )
                   else
