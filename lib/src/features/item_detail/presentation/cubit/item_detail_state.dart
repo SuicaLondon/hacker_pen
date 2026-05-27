@@ -1,36 +1,59 @@
 import 'package:equatable/equatable.dart';
 
-import '../../domain/item_detail.dart';
+import '../../../../core/domain/hn_item.dart';
+import '../../domain/comment_node.dart';
 
-enum ItemDetailStatus { initial, loading, success, failure }
+enum ItemDetailStoryStatus { initial, loading, success, failure }
+
+enum ItemDetailCommentsStatus { initial, loading, success, failure }
 
 class ItemDetailState extends Equatable {
   const ItemDetailState({
-    this.status = ItemDetailStatus.initial,
     this.requestedItemId,
-    this.detail,
-    this.errorMessage,
+    this.storyStatus = ItemDetailStoryStatus.initial,
+    this.commentsStatus = ItemDetailCommentsStatus.initial,
+    this.story,
+    this.comments = const <CommentNode>[],
+    this.storyErrorMessage,
+    this.commentsErrorMessage,
   });
 
-  final ItemDetailStatus status;
   final int? requestedItemId;
-  final ItemDetail? detail;
-  final String? errorMessage;
+  final ItemDetailStoryStatus storyStatus;
+  final ItemDetailCommentsStatus commentsStatus;
+  final HnItem? story;
+  final List<CommentNode> comments;
+  final String? storyErrorMessage;
+  final String? commentsErrorMessage;
 
   ItemDetailState copyWith({
-    ItemDetailStatus? status,
     int? requestedItemId,
-    ItemDetail? detail,
-    String? errorMessage,
+    ItemDetailStoryStatus? storyStatus,
+    ItemDetailCommentsStatus? commentsStatus,
+    HnItem? story,
+    List<CommentNode>? comments,
+    String? storyErrorMessage,
+    String? commentsErrorMessage,
   }) {
     return ItemDetailState(
-      status: status ?? this.status,
       requestedItemId: requestedItemId ?? this.requestedItemId,
-      detail: detail ?? this.detail,
-      errorMessage: errorMessage,
+      storyStatus: storyStatus ?? this.storyStatus,
+      commentsStatus: commentsStatus ?? this.commentsStatus,
+      story: story ?? this.story,
+      comments: comments ?? this.comments,
+      storyErrorMessage: storyErrorMessage,
+      commentsErrorMessage: commentsErrorMessage,
     );
   }
 
   @override
-  List<Object?> get props => [status, requestedItemId, detail, errorMessage];
+  List<Object?> get props => [
+    requestedItemId,
+    storyStatus,
+    commentsStatus,
+    story,
+    comments,
+    storyErrorMessage,
+    commentsErrorMessage,
+  ];
 }

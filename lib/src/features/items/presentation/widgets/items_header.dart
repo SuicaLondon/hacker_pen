@@ -54,20 +54,6 @@ class ItemsHeader extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.search, color: Colors.white),
-                ),
-                CircleAvatar(
-                  radius: 12,
-                  backgroundColor: colorScheme.primary,
-                  child: const Icon(
-                    Icons.person,
-                    size: 14,
-                    color: Colors.black,
-                  ),
-                ),
               ],
             ),
           ),
@@ -83,6 +69,7 @@ class ItemsHeader extends StatelessWidget {
                 return InkWell(
                   onTap: () => onTabSelected(index),
                   child: Column(
+                    spacing: 8,
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       Text(
@@ -99,7 +86,6 @@ class ItemsHeader extends StatelessWidget {
                               : FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 8),
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         width: 26,

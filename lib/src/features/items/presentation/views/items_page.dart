@@ -7,7 +7,6 @@ import '../../../item_detail/presentation/views/item_detail_page.dart';
 import '../cubit/items_cubit.dart';
 import '../cubit/items_state.dart';
 import '../widgets/item_story_row.dart';
-import '../widgets/items_bottom_nav.dart';
 import '../widgets/items_error_view.dart';
 import '../widgets/items_header.dart';
 
@@ -20,7 +19,6 @@ class ItemsPage extends StatefulWidget {
 
 class _ItemsPageState extends State<ItemsPage> {
   int _selectedTab = 0;
-  int _selectedBottomNav = 0;
 
   static const List<StoryType> _tabStoryTypes = StoryTypeMetadata.homeTabs;
 
@@ -43,7 +41,9 @@ class _ItemsPageState extends State<ItemsPage> {
             children: [
               ItemsHeader(
                 selectedTab: _selectedTab,
-                tabs: _tabStoryTypes.map((type) => type.label).toList(growable: false),
+                tabs: _tabStoryTypes
+                    .map((type) => type.label)
+                    .toList(growable: false),
                 onTabSelected: (index) {
                   setState(() => _selectedTab = index);
                   context.read<ItemsCubit>().loadItems(
@@ -102,10 +102,6 @@ class _ItemsPageState extends State<ItemsPage> {
               ),
             ],
           ),
-        ),
-        bottomNavigationBar: ItemsBottomNav(
-          selectedIndex: _selectedBottomNav,
-          onSelected: (index) => setState(() => _selectedBottomNav = index),
         ),
       ),
     );

@@ -40,49 +40,74 @@ class _ItemDetailView extends StatelessWidget {
       ),
       body: BlocBuilder<ItemDetailCubit, ItemDetailState>(
         builder: (context, state) {
-          switch (state.status) {
-            case ItemDetailStatus.initial:
-            case ItemDetailStatus.loading:
-              return const Center(child: CircularProgressIndicator());
-            case ItemDetailStatus.failure:
-              return ItemDetailErrorView(
-                message: state.errorMessage ?? 'Unknown error',
-                onRetry: () => context.read<ItemDetailCubit>().load(
-                  state.requestedItemId ?? 0,
+          if (state.storyStatus == ItemDetailStoryStatus.initial ||
+              state.storyStatus == ItemDetailStoryStatus.loading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (state.storyStatus == ItemDetailStoryStatus.failure) {
+            return ItemDetailErrorView(
+              message: state.storyErrorMessage ?? 'Unknown error',
+              onRetry: () => context.read<ItemDetailCubit>().load(
+                state.requestedItemId ?? 0,
+              ),
+            );
+          }
+
+          final story = state.story!;
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 20),
+            children: [
+              ItemDetailStoryCard(story: story),
+              const SizedBox(height: 16),
+              Text(
+                'Comments ${story.descendants}',
+                style: TextStyle(
+                  fontFamily: AppFonts.display,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
                 ),
-              );
-            case ItemDetailStatus.success:
-              final detail = state.detail!;
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(14, 10, 14, 20),
-                children: [
-                  ItemDetailStoryCard(story: detail.story),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Comments ${detail.story.descendants}',
-                    style: TextStyle(
-                      fontFamily: AppFonts.display,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (detail.comments.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Text(
-                        'No comments yet.',
+              ),
+              const SizedBox(height: 8),
+              if (state.commentsStatus == ItemDetailCommentsStatus.loading ||
+                  state.commentsStatus == ItemDetailCommentsStatus.initial)
+                const Padding(
+                  padding: EdgeInsets.only(top: 16),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (state.commentsStatus == ItemDetailCommentsStatus.failure)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        state.commentsErrorMessage ?? 'Failed to load comments.',
                         style: TextStyle(color: colorScheme.onSurfaceVariant),
                       ),
-                    )
-                  else
-                    ...detail.comments.map(
-                      (comment) => CommentTreeTile(node: comment),
-                    ),
-                ],
-              );
-          }
+                      const SizedBox(height: 8),
+                      OutlinedButton(
+                        onPressed: () => context.read<ItemDetailCubit>().reloadComments(),
+                        child: const Text('Retry comments'),
+                      ),
+                    ],
+                  ),
+                )
+              else if (state.comments.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    'No comments yet.',
+                    style: TextStyle(color: colorScheme.onSurfaceVariant),
+                  ),
+                )
+              else
+                ...state.comments.map(
+                  (comment) => CommentTreeTile(node: comment),
+                ),
+            ],
+          );
         },
       ),
     );

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_fonts.dart';
 import '../../../../core/utils/text_sanitizer.dart';
 import '../../../../core/utils/time_formatter.dart';
 import '../../domain/comment_node.dart';
+import '../views/user_profile_page.dart';
 
 class CommentTreeTile extends StatelessWidget {
   const CommentTreeTile({required this.node, this.depth = 0, super.key});
@@ -41,10 +41,10 @@ class _CommentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
     final isRoot = depth == 0;
     const contentPadding = 9.0;
-    const childGap = 6.0;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -60,21 +60,17 @@ class _CommentCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(contentPadding),
         child: Column(
+          spacing: 6,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _CommentHeader(node: node),
-            const SizedBox(height: 6),
-            Text(
+            SelectableText(
               text,
-              style: TextStyle(
-                fontFamily: AppFonts.text,
+              style: textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurface,
-                fontSize: 15,
-                height: 1.43,
               ),
             ),
             if (node.children.isNotEmpty) ...[
-              const SizedBox(height: childGap),
               _ReplyStack(children: node.children, depth: depth + 1),
             ],
           ],
@@ -119,34 +115,46 @@ class _CommentHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
     return Row(
+      spacing: 8,
       children: [
         Expanded(
-          child: Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: node.comment.by,
-                  style: TextStyle(
+          child: Row(
+            spacing: 8,
+            children: [
+              InkWell(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => UserProfilePage(userId: node.comment.by),
+                    ),
+                  );
+                },
+                child: Text(
+                  node.comment.by,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurface,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                TextSpan(
-                  text:
-                      ' · ${TimeFormatter.relativeFromUnixSeconds(node.comment.time)}',
-                  style: TextStyle(color: colorScheme.onSurfaceVariant),
+              ),
+              Expanded(
+                child: Text(
+                  TimeFormatter.relativeFromUnixSeconds(node.comment.time),
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ],
-            ),
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontFamily: AppFonts.text, fontSize: 13),
+              ),
+            ],
           ),
         ),
         if (node.children.isNotEmpty) ...[
-          const SizedBox(width: 8),
           _ReplyCount(count: node.children.length),
         ],
       ],
@@ -161,9 +169,11 @@ class _ReplyCount extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
 
     return Row(
+      spacing: 3,
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
@@ -171,13 +181,10 @@ class _ReplyCount extends StatelessWidget {
           size: 13,
           color: colorScheme.onSurfaceVariant,
         ),
-        const SizedBox(width: 3),
         Text(
           '$count',
-          style: TextStyle(
-            fontFamily: AppFonts.text,
+          style: textTheme.labelSmall?.copyWith(
             color: colorScheme.onSurfaceVariant,
-            fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
         ),

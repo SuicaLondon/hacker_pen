@@ -75,6 +75,9 @@ Prefer current stable Flutter and Dart idioms:
 - Keep widgets small and private when they are only used by one view.
 - Keep async state transitions explicit in cubits.
 - Avoid broad refactors when a focused change solves the problem.
+- Do not keep reusable parsing/formatting helpers as private widget functions (for example `_host`); move them to shared util functions or extensions under `lib/src/core/utils`.
+- Do not use `SizedBox` only for visual gaps between children in `Row`/`Column`; prefer the built-in `spacing` property on `Row`/`Column`.
+- Prefer `Theme.of(context).textTheme` styles and `copyWith` for text styling; avoid creating ad-hoc full `TextStyle(...)` objects unless there is no suitable theme base style.
 
 ## Infra
 

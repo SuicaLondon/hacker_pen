@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/domain/hn_item.dart';
-import '../../../../core/theme/app_fonts.dart';
 import '../../../../core/utils/time_formatter.dart';
+import '../../../../core/utils/url_extensions.dart';
 
 class ItemStoryRow extends StatelessWidget {
   const ItemStoryRow({
@@ -18,128 +18,94 @@ class ItemStoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final metaStyle = TextStyle(
-      fontFamily: AppFonts.text,
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final metaStyle = textTheme.bodyMedium?.copyWith(
       color: colorScheme.onSurfaceVariant,
-      fontSize: 14,
-      fontWeight: FontWeight.w400,
-      height: 1.2,
-      letterSpacing: -0.1,
+    );
+    final rankStyle = textTheme.titleMedium?.copyWith(
+      color: colorScheme.primary,
+      fontWeight: FontWeight.w700,
+    );
+    final titleStyle = textTheme.titleMedium?.copyWith(
+      color: colorScheme.onSurface,
+      fontWeight: FontWeight.w600,
+    );
+    final scoreStyle = textTheme.labelLarge?.copyWith(
+      color: colorScheme.primary,
+      fontWeight: FontWeight.w700,
+    );
+    final commentCountStyle = textTheme.bodyMedium?.copyWith(
+      color: colorScheme.onSurfaceVariant,
     );
 
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 96),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 42,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        child: Row(
+          spacing: 16,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text('$rank', textAlign: TextAlign.center, style: rankStyle),
+            Expanded(
+              child: Column(
+                spacing: 4,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    item.title,
+                    style: titleStyle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    '${item.url.hostOrFallback()} · by ${item.by} · ${TimeFormatter.relativeFromUnixSeconds(item.time)}',
+                    style: metaStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              spacing: 4,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Row(
+                  spacing: 3,
+                  mainAxisAlignment: .spaceBetween,
+                  mainAxisSize: .min,
                   children: [
-                    Text(
-                      '$rank',
-                      style: TextStyle(
-                        fontFamily: AppFonts.display,
-                        color: colorScheme.primary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        height: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
                     Icon(
                       Icons.keyboard_arrow_up,
                       color: colorScheme.primary,
                       size: 14,
                     ),
-                    Text(
-                      '${item.score}',
-                      style: TextStyle(
-                        fontFamily: AppFonts.display,
-                        color: colorScheme.primary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        height: 1,
-                      ),
-                    ),
+                    Text('${item.score}', style: scoreStyle),
                   ],
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: SizedBox(
-                  height: 96,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        item.title,
-                        style: TextStyle(
-                          fontFamily: AppFonts.display,
-                          color: colorScheme.onSurface,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          height: 1.24,
-                          letterSpacing: -0.2,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          '${_host(item.url)} · by ${item.by} · ${TimeFormatter.relativeFromUnixSeconds(item.time)}',
-                          style: metaStyle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
+                Row(
+                  spacing: 4,
+                  mainAxisAlignment: .spaceBetween,
+                  mainAxisSize: .min,
+                  children: [
+                    Icon(
+                      Icons.mode_comment_outlined,
+                      color: colorScheme.onSurfaceVariant,
+                      size: 14,
+                    ),
+                    Text('${item.descendants}', style: commentCountStyle),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                height: 96,
-                child: Center(
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.mode_comment_outlined,
-                        color: colorScheme.onSurfaceVariant,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${item.descendants}',
-                        style: TextStyle(
-                          fontFamily: AppFonts.text,
-                          color: colorScheme.onSurfaceVariant,
-                          fontSize: 14,
-                          height: 1.1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+              ],
+            ),
+          ],
         ),
       ),
     );
-  }
-
-  String _host(String? url) {
-    if (url == null || url.isEmpty) return '--';
-    final uri = Uri.tryParse(url);
-    return uri?.host.isNotEmpty == true ? uri!.host : '--';
   }
 }
