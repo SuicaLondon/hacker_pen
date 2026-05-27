@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_fonts.dart';
 import '../../../../core/utils/text_sanitizer.dart';
 import '../../../../core/utils/time_formatter.dart';
 import '../../domain/comment_node.dart';
@@ -66,7 +67,7 @@ class _CommentCard extends StatelessWidget {
             Text(
               text,
               style: TextStyle(
-                fontFamily: '.SF Pro Text',
+                fontFamily: AppFonts.text,
                 color: colorScheme.onSurface,
                 fontSize: 15,
                 height: 1.43,
@@ -141,7 +142,7 @@ class _CommentHeader extends StatelessWidget {
               ],
             ),
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontFamily: '.SF Pro Text', fontSize: 13),
+            style: const TextStyle(fontFamily: AppFonts.text, fontSize: 13),
           ),
         ),
         if (node.children.isNotEmpty) ...[
@@ -174,7 +175,7 @@ class _ReplyCount extends StatelessWidget {
         Text(
           '$count',
           style: TextStyle(
-            fontFamily: '.SF Pro Text',
+            fontFamily: AppFonts.text,
             color: colorScheme.onSurfaceVariant,
             fontSize: 12,
             fontWeight: FontWeight.w600,

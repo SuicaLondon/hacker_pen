@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/domain/hn_item.dart';
+import '../../../../core/theme/app_fonts.dart';
 import '../../../../core/utils/text_sanitizer.dart';
 import '../../../../core/utils/time_formatter.dart';
 
@@ -28,7 +29,7 @@ class ItemDetailStoryCard extends StatelessWidget {
           Text(
             story.title,
             style: TextStyle(
-              fontFamily: '.SF Pro Display',
+              fontFamily: AppFonts.display,
               fontSize: 26,
               fontWeight: FontWeight.w700,
               height: 1.15,
@@ -39,7 +40,7 @@ class ItemDetailStoryCard extends StatelessWidget {
           Text(
             '${story.by} ${TimeFormatter.relativeFromUnixSeconds(story.time)} | ${story.score} points',
             style: TextStyle(
-              fontFamily: '.SF Pro Text',
+              fontFamily: AppFonts.text,
               fontSize: 14,
               color: colorScheme.onSurfaceVariant,
             ),
@@ -49,7 +50,7 @@ class ItemDetailStoryCard extends StatelessWidget {
             Text(
               story.url!,
               style: TextStyle(
-                fontFamily: '.SF Pro Text',
+                fontFamily: AppFonts.text,
                 fontSize: 14,
                 color: colorScheme.primary,
               ),
@@ -60,7 +61,7 @@ class ItemDetailStoryCard extends StatelessWidget {
             Text(
               bodyText,
               style: TextStyle(
-                fontFamily: '.SF Pro Text',
+                fontFamily: AppFonts.text,
                 fontSize: 16,
                 color: colorScheme.onSurface,
                 height: 1.45,

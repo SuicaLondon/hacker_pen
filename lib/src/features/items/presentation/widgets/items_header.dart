@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/app_fonts.dart';
+
 class ItemsHeader extends StatelessWidget {
   const ItemsHeader({
     required this.selectedTab,
@@ -35,7 +37,7 @@ class ItemsHeader extends StatelessWidget {
                 RichText(
                   text: TextSpan(
                     style: const TextStyle(
-                      fontFamily: '.SF Pro Display',
+                      fontFamily: AppFonts.display,
                       fontSize: 34,
                       fontWeight: FontWeight.w800,
                       height: 1,
@@ -86,7 +88,7 @@ class ItemsHeader extends StatelessWidget {
                       Text(
                         tabs[index],
                         style: TextStyle(
-                          fontFamily: '.SF Pro Text',
+                          fontFamily: AppFonts.text,
                           color: isSelected
                               ? colorScheme.primary
                               : colorScheme.outlineVariant,

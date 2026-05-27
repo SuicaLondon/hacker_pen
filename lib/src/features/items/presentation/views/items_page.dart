@@ -22,22 +22,7 @@ class _ItemsPageState extends State<ItemsPage> {
   int _selectedTab = 0;
   int _selectedBottomNav = 0;
 
-  static const List<String> _tabs = [
-    'Top',
-    'New',
-    'Best',
-    'Ask',
-    'Show',
-    'Jobs',
-  ];
-  static const List<StoryType> _tabStoryTypes = [
-    StoryType.top,
-    StoryType.newStories,
-    StoryType.best,
-    StoryType.ask,
-    StoryType.show,
-    StoryType.job,
-  ];
+  static const List<StoryType> _tabStoryTypes = StoryTypeMetadata.homeTabs;
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +43,7 @@ class _ItemsPageState extends State<ItemsPage> {
             children: [
               ItemsHeader(
                 selectedTab: _selectedTab,
-                tabs: _tabs,
+                tabs: _tabStoryTypes.map((type) => type.label).toList(growable: false),
                 onTabSelected: (index) {
                   setState(() => _selectedTab = index);
                   context.read<ItemsCubit>().loadItems(

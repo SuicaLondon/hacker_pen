@@ -31,4 +31,22 @@ class ItemsCubit extends Cubit<ItemsState> {
       );
     }
   }
+
+  Future<void> syncWithUpdates() async {
+    if (state.status != ItemsStatus.success) {
+      return;
+    }
+
+    try {
+      final refreshed = await _repository.refreshVisibleItemsIfChanged(
+        storyType: state.storyType,
+        currentItems: state.items,
+      );
+      if (refreshed != null) {
+        emit(state.copyWith(items: refreshed));
+      }
+    } catch (_) {
+      // Non-blocking background sync path; keep current UI state.
+    }
+  }
 }

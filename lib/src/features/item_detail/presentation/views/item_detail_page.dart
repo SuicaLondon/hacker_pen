@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/theme/app_fonts.dart';
 import '../../data/item_detail_repository.dart';
 import '../cubit/item_detail_cubit.dart';
 import '../cubit/item_detail_state.dart';
@@ -60,7 +61,7 @@ class _ItemDetailView extends StatelessWidget {
                   Text(
                     'Comments ${detail.story.descendants}',
                     style: TextStyle(
-                      fontFamily: '.SF Pro Display',
+                      fontFamily: AppFonts.display,
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       color: colorScheme.onSurface,

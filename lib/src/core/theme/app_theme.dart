@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_fonts.dart';
+
 @immutable
 class AppPalette extends ThemeExtension<AppPalette> {
   const AppPalette({
@@ -104,7 +106,7 @@ class AppTheme {
     const palette = AppPalette.dark;
 
     return ThemeData(
-      fontFamily: '.SF Pro Text',
+      fontFamily: AppFonts.text,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: palette.background,
       dividerColor: palette.divider,

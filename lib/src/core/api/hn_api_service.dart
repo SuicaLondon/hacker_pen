@@ -41,22 +41,22 @@ class HnApiService {
   }
 
   Future<List<int>> getTopStories() =>
-      _getStoryIds(type: StoryType.top, path: '/topstories.json');
+      _getStoryIds(type: StoryType.top);
 
   Future<List<int>> getNewStories() =>
-      _getStoryIds(type: StoryType.newStories, path: '/newstories.json');
+      _getStoryIds(type: StoryType.newStories);
 
   Future<List<int>> getBestStories() =>
-      _getStoryIds(type: StoryType.best, path: '/beststories.json');
+      _getStoryIds(type: StoryType.best);
 
   Future<List<int>> getAskStories() =>
-      _getStoryIds(type: StoryType.ask, path: '/askstories.json');
+      _getStoryIds(type: StoryType.ask);
 
   Future<List<int>> getShowStories() =>
-      _getStoryIds(type: StoryType.show, path: '/showstories.json');
+      _getStoryIds(type: StoryType.show);
 
   Future<List<int>> getJobStories() =>
-      _getStoryIds(type: StoryType.job, path: '/jobstories.json');
+      _getStoryIds(type: StoryType.job);
 
   Future<HnUpdates> getUpdates() async {
     final json = await _apiClient.getJson<Map<String, dynamic>>(
@@ -84,10 +84,8 @@ class HnApiService {
     }
   }
 
-  Future<List<int>> _getStoryIds({
-    required StoryType type,
-    required String path,
-  }) {
+  Future<List<int>> _getStoryIds({required StoryType type}) {
+    final path = type.endpointPath;
     return _apiClient.getJson<List<int>>(
       queryKey: HnQueryKeys.storyIds(type),
       path: path,

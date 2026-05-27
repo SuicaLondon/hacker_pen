@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/domain/hn_item.dart';
+import '../../../../core/theme/app_fonts.dart';
 import '../../../../core/utils/time_formatter.dart';
 
 class ItemStoryRow extends StatelessWidget {
@@ -19,7 +20,7 @@ class ItemStoryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final metaStyle = TextStyle(
-      fontFamily: '.SF Pro Text',
+      fontFamily: AppFonts.text,
       color: colorScheme.onSurfaceVariant,
       fontSize: 14,
       fontWeight: FontWeight.w400,
@@ -30,96 +31,107 @@ class ItemStoryRow extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 42,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$rank',
-                    style: TextStyle(
-                      fontFamily: '.SF Pro Display',
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 96),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 42,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$rank',
+                      style: TextStyle(
+                        fontFamily: AppFonts.display,
+                        color: colorScheme.primary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Icon(
+                      Icons.keyboard_arrow_up,
                       color: colorScheme.primary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      height: 1,
+                      size: 14,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Icon(
-                    Icons.keyboard_arrow_up,
-                    color: colorScheme.primary,
-                    size: 14,
-                  ),
-                  Text(
-                    '${item.score}',
-                    style: TextStyle(
-                      fontFamily: '.SF Pro Display',
-                      color: colorScheme.primary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      height: 1,
+                    Text(
+                      '${item.score}',
+                      style: TextStyle(
+                        fontFamily: AppFonts.display,
+                        color: colorScheme.primary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        height: 1,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    style: TextStyle(
-                      fontFamily: '.SF Pro Display',
-                      color: colorScheme.onSurface,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      height: 1.24,
-                      letterSpacing: -0.2,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 16),
+              Expanded(
+                child: SizedBox(
+                  height: 96,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        item.title,
+                        style: TextStyle(
+                          fontFamily: AppFonts.display,
+                          color: colorScheme.onSurface,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          height: 1.24,
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          '${_host(item.url)} · by ${item.by} · ${TimeFormatter.relativeFromUnixSeconds(item.time)}',
+                          style: metaStyle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 5),
-                  Text(
-                    '${_host(item.url)} · by ${item.by} · ${TimeFormatter.relativeFromUnixSeconds(item.time)}',
-                    style: metaStyle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.mode_comment_outlined,
-                    color: colorScheme.onSurfaceVariant,
-                    size: 18,
+              const SizedBox(width: 8),
+              SizedBox(
+                height: 96,
+                child: Center(
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.mode_comment_outlined,
+                        color: colorScheme.onSurfaceVariant,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${item.descendants}',
+                        style: TextStyle(
+                          fontFamily: AppFonts.text,
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 14,
+                          height: 1.1,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${item.descendants}',
-                    style: TextStyle(
-                      fontFamily: '.SF Pro Text',
-                      color: colorScheme.onSurfaceVariant,
-                      fontSize: 14,
-                      height: 1.1,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
