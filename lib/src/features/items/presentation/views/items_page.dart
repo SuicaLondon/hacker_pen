@@ -26,6 +26,7 @@ class _ItemsPageState extends State<ItemsPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = Theme.of(context).colorScheme;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
@@ -37,6 +38,7 @@ class _ItemsPageState extends State<ItemsPage> {
         backgroundColor: theme.scaffoldBackgroundColor,
         body: SafeArea(
           top: false,
+          bottom: false,
           child: Column(
             children: [
               ItemsHeader(
@@ -74,7 +76,7 @@ class _ItemsPageState extends State<ItemsPage> {
                           onRefresh: () =>
                               context.read<ItemsCubit>().loadItems(),
                           child: ListView.separated(
-                            padding: EdgeInsets.zero,
+                            padding: EdgeInsets.only(bottom: bottomInset + 8),
                             physics: const AlwaysScrollableScrollPhysics(),
                             itemCount: state.items.length,
                             separatorBuilder: (_, _) =>
