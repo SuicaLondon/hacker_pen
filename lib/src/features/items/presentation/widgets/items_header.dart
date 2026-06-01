@@ -7,12 +7,14 @@ class ItemsHeader extends StatelessWidget {
     required this.selectedTab,
     required this.tabs,
     required this.onTabSelected,
+    this.onSettingsPressed,
     super.key,
   });
 
   final int selectedTab;
   final List<String> tabs;
   final ValueChanged<int> onTabSelected;
+  final VoidCallback? onSettingsPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -34,26 +36,34 @@ class ItemsHeader extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(16, topInset + 10, 12, 8),
             child: Row(
               children: [
-                RichText(
-                  text: TextSpan(
-                    style: const TextStyle(
-                      fontFamily: AppFonts.display,
-                      fontSize: 34,
-                      fontWeight: FontWeight.w800,
-                      height: 1,
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontFamily: AppFonts.display,
+                        fontSize: 34,
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                      ),
+                      children: [
+                        const TextSpan(
+                          text: 'Hacker',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        TextSpan(
+                          text: 'Pen',
+                          style: TextStyle(color: colorScheme.primary),
+                        ),
+                      ],
                     ),
-                    children: [
-                      const TextSpan(
-                        text: 'Hacker',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      TextSpan(
-                        text: 'Pen',
-                        style: TextStyle(color: colorScheme.primary),
-                      ),
-                    ],
                   ),
                 ),
+                if (onSettingsPressed != null)
+                  IconButton(
+                    tooltip: 'Settings',
+                    onPressed: onSettingsPressed,
+                    icon: const Icon(Icons.settings_outlined),
+                  ),
               ],
             ),
           ),

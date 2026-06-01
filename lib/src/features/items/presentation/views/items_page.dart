@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/navigation/app_routes.dart';
 import '../../../../core/domain/story_type.dart';
-import '../../../item_detail/presentation/views/item_detail_page.dart';
 import '../cubit/items_cubit.dart';
 import '../cubit/items_state.dart';
 import '../widgets/item_story_row.dart';
@@ -52,6 +52,9 @@ class _ItemsPageState extends State<ItemsPage> {
                     storyType: _tabStoryTypes[index],
                   );
                 },
+                onSettingsPressed: () {
+                  Navigator.of(context).pushNamed(AppRoutes.settings);
+                },
               ),
               Expanded(
                 child: BlocBuilder<ItemsCubit, ItemsState>(
@@ -87,11 +90,9 @@ class _ItemsPageState extends State<ItemsPage> {
                                 item: item,
                                 rank: index + 1,
                                 onTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute<void>(
-                                      builder: (_) =>
-                                          ItemDetailPage(itemId: item.id),
-                                    ),
+                                  Navigator.of(context).pushNamed(
+                                    AppRoutes.itemDetail,
+                                    arguments: item.id,
                                   );
                                 },
                               );

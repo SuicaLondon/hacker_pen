@@ -4,7 +4,15 @@ class TextSanitizer {
   static String stripHtml(String? raw) {
     if (raw == null || raw.isEmpty) return '';
 
-    var text = raw
+    var text = raw.replaceAll(
+      RegExp(
+        r'<(script|style|head|svg)\b[^>]*>[\s\S]*?</\1>',
+        caseSensitive: false,
+      ),
+      '',
+    );
+
+    text = text
         .replaceAll('&#x27;', "'")
         .replaceAll('&quot;', '"')
         .replaceAll('&amp;', '&')
