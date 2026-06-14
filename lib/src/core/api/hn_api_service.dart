@@ -40,23 +40,17 @@ class HnApiService {
     );
   }
 
-  Future<List<int>> getTopStories() =>
-      _getStoryIds(type: StoryType.top);
+  Future<List<int>> getTopStories() => _getStoryIds(type: StoryType.top);
 
-  Future<List<int>> getNewStories() =>
-      _getStoryIds(type: StoryType.newStories);
+  Future<List<int>> getNewStories() => _getStoryIds(type: StoryType.newStories);
 
-  Future<List<int>> getBestStories() =>
-      _getStoryIds(type: StoryType.best);
+  Future<List<int>> getBestStories() => _getStoryIds(type: StoryType.best);
 
-  Future<List<int>> getAskStories() =>
-      _getStoryIds(type: StoryType.ask);
+  Future<List<int>> getAskStories() => _getStoryIds(type: StoryType.ask);
 
-  Future<List<int>> getShowStories() =>
-      _getStoryIds(type: StoryType.show);
+  Future<List<int>> getShowStories() => _getStoryIds(type: StoryType.show);
 
-  Future<List<int>> getJobStories() =>
-      _getStoryIds(type: StoryType.job);
+  Future<List<int>> getJobStories() => _getStoryIds(type: StoryType.job);
 
   Future<HnUpdates> getUpdates() async {
     final json = await _apiClient.getJson<Map<String, dynamic>>(

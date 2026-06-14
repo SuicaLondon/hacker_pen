@@ -4,7 +4,8 @@ import '../../../core/domain/story_type.dart';
 import 'items_updates_sync.dart';
 
 class ItemsRepository {
-  ItemsRepository(this._apiService) : _updatesSync = ItemsUpdatesSync(_apiService);
+  ItemsRepository(this._apiService)
+    : _updatesSync = ItemsUpdatesSync(_apiService);
 
   final HnApiService _apiService;
   final ItemsUpdatesSync _updatesSync;
