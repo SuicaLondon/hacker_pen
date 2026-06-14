@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/design_system/design_system.dart';
 import '../../../../core/ai/ai_language.dart';
 import '../../../../core/ai/ai_provider.dart';
 import '../../../../core/ai/ai_settings.dart';
@@ -13,7 +14,17 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(MediaQuery.paddingOf(context).top + 48),
+        child: HpTopBar(
+          title: 'Settings',
+          leading: HpIconButton(
+            tooltip: 'Back',
+            onPressed: () => Navigator.of(context).maybePop(),
+            icon: Icons.arrow_back,
+          ),
+        ),
+      ),
       body: const _AiSettingsForm(),
     );
   }
@@ -50,7 +61,7 @@ class _AiSettingsFormState extends State<_AiSettingsForm> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.hpColors;
 
     return FutureBuilder<AiSettings>(
       future: _settingsFuture,
@@ -66,7 +77,7 @@ class _AiSettingsFormState extends State<_AiSettingsForm> {
               child: Text(
                 snapshot.error?.toString() ?? 'Failed to load settings.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: colorScheme.onSurfaceVariant),
+                style: TextStyle(color: colors.inkMuted),
               ),
             ),
           );
@@ -80,136 +91,130 @@ class _AiSettingsFormState extends State<_AiSettingsForm> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
             children: [
-              Text(
-                'AI Provider',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<AiProviderId>(
-                initialValue: settings.providerId,
-                decoration: const InputDecoration(labelText: 'Provider'),
-                items: AiProviders.all
-                    .map((provider) {
-                      return DropdownMenuItem<AiProviderId>(
-                        value: provider.id,
-                        enabled: provider.isAvailable,
-                        child: Text(
-                          provider.isAvailable
-                              ? provider.label
-                              : '${provider.label} (Coming soon)',
-                        ),
-                      );
-                    })
-                    .toList(growable: false),
-                onChanged: _isSaving ? null : _handleProviderChanged,
-              ),
-              const SizedBox(height: 14),
-              DropdownButtonFormField<String>(
-                key: ValueKey('model-${settings.providerId.storageKey}'),
-                initialValue: settings.model,
-                decoration: const InputDecoration(labelText: 'Model'),
-                items: provider.models
-                    .map((model) {
-                      return DropdownMenuItem<String>(
-                        value: model,
-                        child: Text(model),
-                      );
-                    })
-                    .toList(growable: false),
-                onChanged: _isSaving
-                    ? null
-                    : (model) {
-                        if (model == null || model == settings.model) return;
-                        setState(() {
-                          _settings = settings.copyWith(model: model);
-                          _statusMessage = null;
-                        });
-                      },
-              ),
-              const SizedBox(height: 14),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                enabled: !_isSaving,
-                title: const Text('Target language'),
-                subtitle: Text(settings.targetLanguage),
-                trailing: const Icon(Icons.expand_more),
-                onTap: _isSaving ? null : () => _selectLanguage(settings),
+              HpSettingsSection(
+                title: 'AI Provider',
+                children: [
+                  DropdownButtonFormField<AiProviderId>(
+                    initialValue: settings.providerId,
+                    decoration: const InputDecoration(labelText: 'Provider'),
+                    items: AiProviders.all
+                        .map((provider) {
+                          return DropdownMenuItem<AiProviderId>(
+                            value: provider.id,
+                            enabled: provider.isAvailable,
+                            child: Text(
+                              provider.isAvailable
+                                  ? provider.label
+                                  : '${provider.label} (Coming soon)',
+                            ),
+                          );
+                        })
+                        .toList(growable: false),
+                    onChanged: _isSaving ? null : _handleProviderChanged,
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    key: ValueKey('model-${settings.providerId.storageKey}'),
+                    initialValue: settings.model,
+                    decoration: const InputDecoration(labelText: 'Model'),
+                    items: provider.models
+                        .map((model) {
+                          return DropdownMenuItem<String>(
+                            value: model,
+                            child: Text(model),
+                          );
+                        })
+                        .toList(growable: false),
+                    onChanged: _isSaving
+                        ? null
+                        : (model) {
+                            if (model == null || model == settings.model) {
+                              return;
+                            }
+                            setState(() {
+                              _settings = settings.copyWith(model: model);
+                              _statusMessage = null;
+                            });
+                          },
+                  ),
+                  const SizedBox(height: 12),
+                  _SettingsActionRow(
+                    title: 'Target language',
+                    value: settings.targetLanguage,
+                    enabled: !_isSaving,
+                    onTap: () => _selectLanguage(settings),
+                  ),
+                ],
               ),
               const SizedBox(height: 26),
-              Text(
-                'API Key',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: colorScheme.onSurface,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _apiKeyController,
-                enabled: !_isSaving,
-                obscureText: _obscureApiKey,
-                textInputAction: TextInputAction.done,
-                decoration: InputDecoration(
-                  labelText: settings.hasApiKey
-                      ? 'Replace saved key'
-                      : 'API key',
-                  suffixIcon: IconButton(
-                    tooltip: _obscureApiKey ? 'Show key' : 'Hide key',
-                    onPressed: () {
-                      setState(() => _obscureApiKey = !_obscureApiKey);
-                    },
-                    icon: Icon(
-                      _obscureApiKey
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                    ),
-                  ),
-                ),
-                validator: (value) {
-                  if (!settings.hasApiKey && (value?.trim() ?? '').isEmpty) {
-                    return 'API key is required.';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              Row(
+              HpSettingsSection(
+                title: 'API Key',
                 children: [
-                  Icon(
-                    settings.hasApiKey
-                        ? Icons.lock_outline
-                        : Icons.lock_open_outlined,
-                    size: 17,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      settings.hasApiKey
-                          ? 'Saved in secure storage.'
-                          : 'No key saved.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                  TextFormField(
+                    controller: _apiKeyController,
+                    enabled: !_isSaving,
+                    obscureText: _obscureApiKey,
+                    textInputAction: TextInputAction.done,
+                    decoration: InputDecoration(
+                      labelText: settings.hasApiKey
+                          ? 'Replace saved key'
+                          : 'API key',
+                      suffixIcon: IconButton(
+                        tooltip: _obscureApiKey ? 'Show key' : 'Hide key',
+                        onPressed: () {
+                          setState(() => _obscureApiKey = !_obscureApiKey);
+                        },
+                        icon: Icon(
+                          _obscureApiKey
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                        ),
                       ),
                     ),
+                    validator: (value) {
+                      if (!settings.hasApiKey &&
+                          (value?.trim() ?? '').isEmpty) {
+                        return 'API key is required.';
+                      }
+                      return null;
+                    },
                   ),
-                  if (settings.hasApiKey)
-                    TextButton(
-                      onPressed: _isSaving ? null : _clearApiKey,
-                      child: const Text('Clear'),
-                    ),
+                  const SizedBox(width: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        settings.hasApiKey
+                            ? Icons.lock_outline
+                            : Icons.lock_open_outlined,
+                        size: 17,
+                        color: colors.inkMuted,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          settings.hasApiKey
+                              ? 'Saved in secure storage.'
+                              : 'No key saved.',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: colors.inkMuted),
+                        ),
+                      ),
+                      if (settings.hasApiKey)
+                        TextButton(
+                          onPressed: _isSaving ? null : _clearApiKey,
+                          child: const Text('Clear'),
+                        ),
+                    ],
+                  ),
                 ],
               ),
               if (_statusMessage != null) ...[
                 const SizedBox(height: 18),
                 Text(
                   _statusMessage!,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: colors.inkMuted),
                 ),
               ],
               const SizedBox(height: 24),
@@ -258,19 +263,22 @@ class _AiSettingsFormState extends State<_AiSettingsForm> {
       context: context,
       useSafeArea: true,
       builder: (context) {
-        return ListView.separated(
-          shrinkWrap: true,
-          itemCount: AiLanguage.common.length,
-          separatorBuilder: (_, _) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final language = AiLanguage.common[index];
-            final isSelected = language == settings.targetLanguage;
-            return ListTile(
-              title: Text(language),
-              trailing: isSelected ? const Icon(Icons.check) : null,
-              onTap: () => Navigator.of(context).pop(language),
-            );
-          },
+        return ColoredBox(
+          color: context.hpColors.paper,
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: AiLanguage.common.length,
+            separatorBuilder: (_, _) => const HpDivider(),
+            itemBuilder: (context, index) {
+              final language = AiLanguage.common[index];
+              final isSelected = language == settings.targetLanguage;
+              return ListTile(
+                title: Text(language),
+                trailing: isSelected ? const Icon(Icons.check) : null,
+                onTap: () => Navigator.of(context).pop(language),
+              );
+            },
+          ),
         );
       },
     );
@@ -347,5 +355,64 @@ class _AiSettingsFormState extends State<_AiSettingsForm> {
         _statusMessage = error.toString();
       });
     }
+  }
+}
+
+class _SettingsActionRow extends StatelessWidget {
+  const _SettingsActionRow({
+    required this.title,
+    required this.value,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String title;
+  final String value;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.hpColors;
+
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: context.hpRadii.medium,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.surface,
+          border: Border.all(color: colors.rule),
+          borderRadius: context.hpRadii.medium,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: colors.inkMuted),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      value,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: enabled ? colors.ink : colors.inkSubtle,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.expand_more, color: colors.inkMuted),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

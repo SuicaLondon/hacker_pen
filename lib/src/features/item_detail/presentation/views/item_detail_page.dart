@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../../../../core/design_system/design_system.dart';
 import '../../../../core/domain/hn_item.dart';
-import '../../../../core/theme/app_fonts.dart';
 import '../../../../core/utils/text_sanitizer.dart';
 import '../../../../core/utils/time_formatter.dart';
 import '../../data/item_detail_repository.dart';
@@ -37,6 +37,8 @@ class _ItemDetailView extends StatefulWidget {
 }
 
 class _ItemDetailViewState extends State<_ItemDetailView> {
+  static const double _storyHeaderToolbarHeight = 76;
+
   var _isHeaderVisible = true;
 
   @override
@@ -48,23 +50,36 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
         final story = state.story;
         final usesOverlayHeader =
             story?.url?.isNotEmpty == true && _supportsInlineWebView;
+        final storyHeaderHeight =
+            MediaQuery.paddingOf(context).top + _storyHeaderToolbarHeight;
 
         return Scaffold(
           extendBodyBehindAppBar: usesOverlayHeader,
           backgroundColor: theme.scaffoldBackgroundColor,
           appBar: story == null
-              ? AppBar(
-                  backgroundColor: theme.scaffoldBackgroundColor,
-                  centerTitle: true,
-                  title: const Text('Story'),
+              ? PreferredSize(
+                  preferredSize: Size.fromHeight(
+                    MediaQuery.paddingOf(context).top + 48,
+                  ),
+                  child: HpTopBar(
+                    title: 'Story',
+                    leading: HpIconButton(
+                      tooltip: 'Back',
+                      onPressed: () => Navigator.of(context).maybePop(),
+                      icon: Icons.arrow_back,
+                    ),
+                  ),
                 )
               : PreferredSize(
-                  preferredSize: const Size.fromHeight(76),
+                  preferredSize: const Size.fromHeight(
+                    _storyHeaderToolbarHeight,
+                  ),
                   child: _AnimatedStoryHeader(
                     isVisible: _isHeaderVisible,
                     story: story,
                   ),
                 ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
           floatingActionButton: story == null
               ? null
               : ItemDetailCommentsFab(
@@ -110,7 +125,7 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
 
               return _StoryWebView(
                 url: storyUrl,
-                headerHeight: 76,
+                headerHeight: storyHeaderHeight,
                 isHeaderVisible: _isHeaderVisible,
                 onHeaderVisibilityChanged: _setHeaderVisible,
               );
@@ -161,8 +176,7 @@ class _StoryAppBarTitle extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: textTheme.titleSmall?.copyWith(
             color: colorScheme.onSurface,
-            fontFamily: AppFonts.display,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
             height: 1.1,
           ),
         ),
@@ -174,7 +188,7 @@ class _StoryAppBarTitle extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: textTheme.bodySmall?.copyWith(
             color: colorScheme.onSurfaceVariant,
-            fontFamily: AppFonts.text,
+            fontFamily: context.hpText.monoFamily,
           ),
         ),
       ],
@@ -190,7 +204,7 @@ class _AnimatedStoryHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = context.hpColors;
 
     return IgnorePointer(
       ignoring: !isVisible,
@@ -202,13 +216,28 @@ class _AnimatedStoryHeader extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           curve: Curves.easeOutCubic,
           opacity: isVisible ? 1 : 0,
-          child: AppBar(
-            backgroundColor: theme.scaffoldBackgroundColor.withValues(
-              alpha: 0.96,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: colors.paper.withValues(alpha: 0.96),
+              border: Border(bottom: BorderSide(color: colors.rule)),
             ),
-            centerTitle: true,
-            toolbarHeight: 76,
-            title: _StoryAppBarTitle(story: story),
+            child: SafeArea(
+              bottom: false,
+              child: SizedBox(
+                height: _ItemDetailViewState._storyHeaderToolbarHeight,
+                child: Row(
+                  children: [
+                    HpIconButton(
+                      tooltip: 'Back',
+                      onPressed: () => Navigator.of(context).maybePop(),
+                      icon: Icons.arrow_back,
+                    ),
+                    Expanded(child: _StoryAppBarTitle(story: story)),
+                    const SizedBox(width: 38),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -255,7 +284,7 @@ class _StoryWebViewState extends State<_StoryWebView> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.hpColors;
     final controller = _controller;
 
     if (controller == null) {
@@ -275,14 +304,14 @@ class _StoryWebViewState extends State<_StoryWebView> {
         if (!_hasLoadedFirstPage)
           Positioned.fill(
             child: ColoredBox(
-              color: colorScheme.surface,
+              color: colors.paper,
               child: Center(
                 child: SizedBox(
                   width: 34,
                   height: 34,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.6,
-                    color: colorScheme.primary,
+                    color: colors.brand,
                   ),
                 ),
               ),
@@ -304,17 +333,14 @@ class _StoryWebViewState extends State<_StoryWebView> {
         if (_errorMessage != null)
           Positioned.fill(
             child: ColoredBox(
-              color: colorScheme.surface,
+              color: colors.paper,
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Text(
                     'Unable to load this page.\n$_errorMessage',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: colorScheme.onSurfaceVariant,
-                      fontFamily: AppFonts.text,
-                    ),
+                    style: TextStyle(color: colors.inkMuted),
                   ),
                 ),
               ),
@@ -426,7 +452,7 @@ class _SelfPostBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.hpColors;
     final bodyText = TextSanitizer.stripHtml(story.text);
 
     return ListView(
@@ -435,10 +461,7 @@ class _SelfPostBody extends StatelessWidget {
         Text(
           bodyText.isEmpty ? 'No story text available.' : bodyText,
           style: TextStyle(
-            color: bodyText.isEmpty
-                ? colorScheme.onSurfaceVariant
-                : colorScheme.onSurface,
-            fontFamily: AppFonts.text,
+            color: bodyText.isEmpty ? colors.inkMuted : colors.ink,
             fontSize: 17,
             height: 1.45,
           ),
@@ -455,7 +478,7 @@ class _UnsupportedWebViewBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.hpColors;
 
     return Center(
       child: Padding(
@@ -464,8 +487,8 @@ class _UnsupportedWebViewBody extends StatelessWidget {
           url,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: colorScheme.primary,
-            fontFamily: AppFonts.text,
+            color: colors.brand,
+            fontFamily: context.hpText.monoFamily,
             fontSize: 16,
           ),
         ),
