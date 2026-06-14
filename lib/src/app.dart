@@ -6,7 +6,7 @@ import 'core/ai/ai_settings_repository.dart';
 import 'core/api/api_client.dart';
 import 'core/api/hn_api_service.dart';
 import 'core/navigation/app_routes.dart';
-import 'core/theme/app_theme.dart';
+import 'core/design_system/design_system.dart';
 import 'features/item_detail/data/item_detail_repository.dart';
 import 'features/items/data/items_repository.dart';
 import 'features/items/presentation/cubit/items_cubit.dart';
@@ -46,7 +46,7 @@ class HackerPenApp extends StatelessWidget {
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'HackerPen',
-          theme: AppTheme.dark(),
+          theme: HpTheme.light(),
           initialRoute: AppRoutes.items,
           onGenerateRoute: AppRoutes.onGenerateRoute,
         ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_fonts.dart';
+import '../../../../core/design_system/design_system.dart';
 
 class ItemsHeader extends StatelessWidget {
   const ItemsHeader({
@@ -19,98 +19,63 @@ class ItemsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.hpColors;
     final topInset = MediaQuery.paddingOf(context).top;
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [colorScheme.surface, theme.scaffoldBackgroundColor],
-        ),
-      ),
+    return DecoratedBox(
+      decoration: BoxDecoration(color: theme.scaffoldBackgroundColor),
       child: Column(
         children: [
           Padding(
-            padding: EdgeInsets.fromLTRB(16, topInset + 10, 12, 8),
+            padding: EdgeInsets.fromLTRB(12, topInset + 8, 8, 7),
             child: Row(
               children: [
-                Expanded(
-                  child: RichText(
-                    text: TextSpan(
-                      style: const TextStyle(
-                        fontFamily: AppFonts.display,
-                        fontSize: 34,
-                        fontWeight: FontWeight.w800,
-                        height: 1,
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colors.brand,
+                    borderRadius: context.hpRadii.small,
+                  ),
+                  child: SizedBox.square(
+                    dimension: 24,
+                    child: Center(
+                      child: Text(
+                        'H',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: colors.surface,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                      children: [
-                        const TextSpan(
-                          text: 'Hacker',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        TextSpan(
-                          text: 'Pen',
-                          style: TextStyle(color: colorScheme.primary),
-                        ),
-                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    'HackerPen',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: colors.ink,
+                      fontFamily: context.hpText.displayFamily,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
                 if (onSettingsPressed != null)
-                  IconButton(
+                  HpIconButton(
                     tooltip: 'Settings',
                     onPressed: onSettingsPressed,
-                    icon: const Icon(Icons.settings_outlined),
+                    icon: Icons.settings_outlined,
                   ),
               ],
             ),
           ),
-          SizedBox(
-            height: 42,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              scrollDirection: Axis.horizontal,
-              itemCount: tabs.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 20),
-              itemBuilder: (context, index) {
-                final isSelected = index == selectedTab;
-                return InkWell(
-                  onTap: () => onTabSelected(index),
-                  child: Column(
-                    spacing: 8,
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        tabs[index],
-                        style: TextStyle(
-                          fontFamily: AppFonts.text,
-                          color: isSelected
-                              ? colorScheme.primary
-                              : colorScheme.outlineVariant,
-                          fontSize: 17,
-                          height: 1.1,
-                          fontWeight: isSelected
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                        ),
-                      ),
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        width: 26,
-                        height: 2,
-                        color: isSelected
-                            ? colorScheme.primary
-                            : Colors.transparent,
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
+          HpSegmentTabs(
+            selectedIndex: selectedTab,
+            tabs: tabs,
+            onSelected: onTabSelected,
           ),
-          const Divider(height: 1),
+          const HpDivider(),
         ],
       ),
     );

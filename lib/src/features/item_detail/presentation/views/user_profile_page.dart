@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/design_system/design_system.dart';
 import '../../../../core/api/models/hn_user.dart';
 import '../../../../core/utils/text_sanitizer.dart';
 import '../../data/item_detail_repository.dart';
@@ -58,32 +59,33 @@ class _UserProfilePageState extends State<UserProfilePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
-    final colorScheme = theme.colorScheme;
+    final colors = context.hpColors;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        title: Text(widget.userId),
-        actions: [
-          if (_isRefreshing)
-            const Padding(
-              padding: EdgeInsets.only(right: 14),
-              child: Center(
-                child: SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(MediaQuery.paddingOf(context).top + 48),
+        child: HpTopBar(
+          title: widget.userId,
+          leading: HpIconButton(
+            tooltip: 'Back',
+            onPressed: () => Navigator.of(context).maybePop(),
+            icon: Icons.arrow_back,
+          ),
+          trailing: _isRefreshing
+              ? const Padding(
+                  padding: EdgeInsets.only(right: 10),
+                  child: SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              : HpIconButton(
+                  tooltip: 'Refresh',
+                  onPressed: _refresh,
+                  icon: Icons.refresh,
                 ),
-              ),
-            )
-          else
-            IconButton(
-              tooltip: 'Refresh',
-              onPressed: _refresh,
-              icon: const Icon(Icons.refresh),
-            ),
-        ],
+        ),
       ),
       body: FutureBuilder<HnUser>(
         future: _future,
@@ -100,11 +102,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 children: [
                   Text(
                     'Unable to load user profile.',
-                    style: textTheme.bodyLarge?.copyWith(
-                      color: colorScheme.onSurface,
-                    ),
+                    style: textTheme.bodyLarge?.copyWith(color: colors.ink),
                   ),
-                  FilledButton.icon(
+                  OutlinedButton.icon(
                     onPressed: _refresh,
                     icon: const Icon(Icons.refresh),
                     label: const Text('Retry'),
@@ -119,9 +119,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
             return Center(
               child: Text(
                 'User not found.',
-                style: textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+                style: textTheme.bodyLarge?.copyWith(color: colors.inkMuted),
               ),
             );
           }
@@ -178,7 +176,7 @@ class _ProfileHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.hpColors;
     final textTheme = Theme.of(context).textTheme;
     final initial = user.id.isEmpty
         ? '?'
@@ -186,11 +184,9 @@ class _ProfileHero extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
+        color: colors.surface.withValues(alpha: 0.58),
+        borderRadius: context.hpRadii.medium,
+        border: Border.all(color: colors.rule),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -199,12 +195,12 @@ class _ProfileHero extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 20,
-              backgroundColor: colorScheme.primary.withValues(alpha: 0.16),
+              backgroundColor: colors.highlight,
               child: Text(
                 initial,
                 style: textTheme.titleMedium?.copyWith(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.w700,
+                  color: colors.brand,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
@@ -216,14 +212,14 @@ class _ProfileHero extends StatelessWidget {
                   SelectableText(
                     user.id,
                     style: textTheme.titleMedium?.copyWith(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w700,
+                      color: colors.ink,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                   Text(
                     'Hacker News User',
                     style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                      color: colors.inkMuted,
                     ),
                   ),
                 ],
@@ -243,16 +239,14 @@ class _StatsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.hpColors;
     final textTheme = Theme.of(context).textTheme;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
+        color: colors.surface.withValues(alpha: 0.58),
+        borderRadius: context.hpRadii.medium,
+        border: Border.all(color: colors.rule),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -266,15 +260,15 @@ class _StatsCard extends StatelessWidget {
                       child: Text(
                         row.label,
                         style: textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                          color: colors.inkMuted,
                         ),
                       ),
                     ),
                     SelectableText(
                       row.value,
                       style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurface,
-                        fontWeight: FontWeight.w600,
+                        color: colors.ink,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -294,16 +288,14 @@ class _AboutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.hpColors;
     final textTheme = Theme.of(context).textTheme;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
+        color: colors.surface.withValues(alpha: 0.58),
+        borderRadius: context.hpRadii.medium,
+        border: Border.all(color: colors.rule),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -314,15 +306,13 @@ class _AboutCard extends StatelessWidget {
             Text(
               'About',
               style: textTheme.titleSmall?.copyWith(
-                color: colorScheme.onSurface,
-                fontWeight: FontWeight.w700,
+                color: colors.ink,
+                fontWeight: FontWeight.w800,
               ),
             ),
             SelectableText(
               about.isEmpty ? 'No bio.' : about,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
+              style: textTheme.bodyMedium?.copyWith(color: colors.inkMuted),
             ),
           ],
         ),

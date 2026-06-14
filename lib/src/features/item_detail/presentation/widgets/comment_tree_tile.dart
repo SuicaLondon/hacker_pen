@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/design_system/design_system.dart';
+import '../../../../core/navigation/app_routes.dart';
 import '../../../../core/utils/text_sanitizer.dart';
 import '../../../../core/utils/time_formatter.dart';
 import '../../domain/comment_node.dart';
-import '../views/user_profile_page.dart';
 
 class CommentTreeTile extends StatelessWidget {
   const CommentTreeTile({required this.node, this.depth = 0, super.key});
@@ -19,17 +20,18 @@ class CommentTreeTile extends StatelessWidget {
       return _ReplyStack(children: node.children, depth: depth);
     }
 
-    final card = Padding(
-      padding: EdgeInsets.all(depth == 0 ? 4 : 0),
-      child: _CommentCard(node: node, depth: depth, text: text),
+    return Padding(
+      padding: EdgeInsets.only(
+        top: depth == 0 ? 4 : 0,
+        left: depth == 0 ? 0 : 2,
+      ),
+      child: _CommentBlock(node: node, depth: depth, text: text),
     );
-
-    return card;
   }
 }
 
-class _CommentCard extends StatelessWidget {
-  const _CommentCard({
+class _CommentBlock extends StatelessWidget {
+  const _CommentBlock({
     required this.node,
     required this.depth,
     required this.text,
@@ -41,24 +43,23 @@ class _CommentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-    final isRoot = depth == 0;
-    const contentPadding = 9.0;
+    final colors = context.hpColors;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: _surfaceColor(colorScheme, depth),
-        borderRadius: BorderRadius.circular(isRoot ? 9 : 7),
-        border: Border.all(
-          color: isRoot
-              ? colorScheme.outlineVariant.withValues(alpha: 0.72)
-              : colorScheme.outlineVariant.withValues(alpha: 0.58),
-          width: isRoot ? 1.15 : 1,
+        color: _surfaceColor(colors, depth),
+        border: Border(
+          left: BorderSide(
+            color: depth == 0
+                ? colors.ruleStrong
+                : colors.brand.withValues(alpha: 0.38),
+            width: depth == 0 ? 1 : 2,
+          ),
+          top: BorderSide(color: colors.rule.withValues(alpha: 0.72)),
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(contentPadding),
+        padding: const EdgeInsets.fromLTRB(7, 8, 7, 8),
         child: Column(
           spacing: 6,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,24 +67,23 @@ class _CommentCard extends StatelessWidget {
             _CommentHeader(node: node),
             SelectableText(
               text,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: colors.ink, height: 1.36),
             ),
-            if (node.children.isNotEmpty) ...[
+            if (node.children.isNotEmpty)
               _ReplyStack(children: node.children, depth: depth + 1),
-            ],
           ],
         ),
       ),
     );
   }
 
-  Color _surfaceColor(ColorScheme colorScheme, int depth) {
-    if (depth == 0) return colorScheme.surfaceContainerLow;
-
-    final opacity = depth.isEven ? 0.48 : 0.3;
-    return colorScheme.surfaceContainerHigh.withValues(alpha: opacity);
+  Color _surfaceColor(HpColors colors, int depth) {
+    if (depth == 0) return colors.surface.withValues(alpha: 0.5);
+    return depth.isEven
+        ? colors.surfaceMuted.withValues(alpha: 0.48)
+        : colors.highlight.withValues(alpha: 0.42);
   }
 }
 
@@ -115,8 +115,7 @@ class _CommentHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.hpColors;
 
     return Row(
       spacing: 8,
@@ -127,36 +126,29 @@ class _CommentHeader extends StatelessWidget {
             children: [
               InkWell(
                 onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => UserProfilePage(userId: node.comment.by),
-                    ),
+                  Navigator.of(context).pushNamed(
+                    AppRoutes.userProfile,
+                    arguments: node.comment.by,
                   );
                 },
                 child: Text(
                   node.comment.by,
                   overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w700,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: colors.ink,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
               Expanded(
-                child: Text(
+                child: HpMetaText(
                   TimeFormatter.relativeFromUnixSeconds(node.comment.time),
-                  overflow: TextOverflow.ellipsis,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
                 ),
               ),
             ],
           ),
         ),
-        if (node.children.isNotEmpty) ...[
-          _ReplyCount(count: node.children.length),
-        ],
+        if (node.children.isNotEmpty) _ReplyCount(count: node.children.length),
       ],
     );
   }
@@ -169,23 +161,18 @@ class _ReplyCount extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.hpColors;
 
     return Row(
       spacing: 3,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          Icons.mode_comment_outlined,
-          size: 13,
-          color: colorScheme.onSurfaceVariant,
-        ),
+        Icon(Icons.mode_comment_outlined, size: 13, color: colors.inkMuted),
         Text(
           '$count',
-          style: textTheme.labelSmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: colors.inkMuted,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ],

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/design_system/design_system.dart';
+
 class ItemsErrorView extends StatelessWidget {
   const ItemsErrorView({
     required this.message,
@@ -12,7 +14,7 @@ class ItemsErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.hpColors;
 
     return Center(
       child: Padding(
@@ -20,20 +22,20 @@ class ItemsErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 42, color: Colors.redAccent),
+            Icon(Icons.error_outline, size: 36, color: colors.danger),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Failed to load items',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: TextStyle(color: colorScheme.onSurfaceVariant),
+              style: TextStyle(color: colors.inkMuted),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(onPressed: onRetry, child: const Text('Try again')),
+            OutlinedButton(onPressed: onRetry, child: const Text('Try again')),
           ],
         ),
       ),
