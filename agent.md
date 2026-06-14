@@ -1,8 +1,18 @@
-# Agent Guide
+# Hacker Pen Agent Guide
 
 ## Project
 
 Hacker Pen is a Flutter app for reading Hacker News. The project intentionally does not support Flutter Web; do not recreate or commit a `web/` directory.
+
+## Tech Stack
+
+- Flutter app written in Dart.
+- Flutter SDK is pinned with FVM to `3.41.9`; use the `.fvmrc` value as the source of truth when it changes.
+- State management uses `flutter_bloc`.
+- Hacker News data access uses `http`, repository classes, and `cached_query` for in-memory server-state caching.
+- Detail pages can use `webview_flutter` where embedded web content is required.
+- AI settings and secrets use `shared_preferences` and `flutter_secure_storage`.
+- Supported platform targets are iOS, Android, macOS, Linux, and Windows. Flutter Web is intentionally unsupported.
 
 ## Toolchain
 
@@ -109,6 +119,21 @@ Network requests are cached in memory with `cached_query`. Keep cache keys stabl
 ## Git Hygiene
 
 Commit source, configuration, platform templates, lockfiles, and tests.
+
+Commit messages:
+
+- Use Conventional Commits: `<type>(optional-scope): <description>`.
+- Use common types such as `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `build`, and `chore`.
+- Keep the description concise, imperative, and lowercase unless it contains a proper noun.
+- Add a readable scope when it helps, for example `style(items): compact story rank column`.
+- Avoid vague generated-agent wording such as `codex changes`, `update files`, or `misc fixes`.
+- Mention tests, docs, or platform updates in the body when they are part of the change.
+
+Pull request titles:
+
+- Use the same Conventional Commits shape as commit subjects: `<type>(optional-scope): <description>`.
+- Do not prefix PR titles with `codex`.
+- Prefer readable titles such as `style(items): compact feed layout` or `docs(agent): document Flutter workflow`.
 
 Do not commit:
 

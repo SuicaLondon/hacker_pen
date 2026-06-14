@@ -150,7 +150,7 @@ class HpSegmentTabs extends StatelessWidget {
     final colors = context.hpColors;
 
     return SizedBox(
-      height: 38,
+      height: 32,
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         scrollDirection: Axis.horizontal,
@@ -171,7 +171,7 @@ class HpSegmentTabs extends StatelessWidget {
                     fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 7),
+                const SizedBox(height: 5),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 160),
                   width: 22,
@@ -213,24 +213,33 @@ class HpStoryRowShell extends StatelessWidget {
         color: isSelected ? colors.highlight : Colors.transparent,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 30,
-                child: Text(
-                  '$rank',
-                  textAlign: TextAlign.right,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: colors.brand,
-                    fontWeight: FontWeight.w800,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: 22,
+                  child: Center(
+                    child: Text(
+                      '$rank',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: colors.brand,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(child: child),
-              if (trailing != null) ...[const SizedBox(width: 10), trailing!],
-            ],
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Align(alignment: Alignment.topLeft, child: child),
+                ),
+                if (trailing != null) ...[
+                  const SizedBox(width: 10),
+                  Align(alignment: Alignment.topRight, child: trailing!),
+                ],
+              ],
+            ),
           ),
         ),
       ),

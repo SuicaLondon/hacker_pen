@@ -27,7 +27,7 @@ class ItemsHeader extends StatelessWidget {
       child: Column(
         children: [
           Padding(
-            padding: EdgeInsets.fromLTRB(12, topInset + 8, 8, 7),
+            padding: EdgeInsets.fromLTRB(12, topInset + 5, 8, 4),
             child: Row(
               children: [
                 DecoratedBox(
@@ -36,7 +36,7 @@ class ItemsHeader extends StatelessWidget {
                     borderRadius: context.hpRadii.small,
                   ),
                   child: SizedBox.square(
-                    dimension: 24,
+                    dimension: 22,
                     child: Center(
                       child: Text(
                         'H',
@@ -48,7 +48,7 @@ class ItemsHeader extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 9),
+                const SizedBox(width: 7),
                 Expanded(
                   child: Text(
                     'HackerPen',
@@ -62,7 +62,7 @@ class ItemsHeader extends StatelessWidget {
                   ),
                 ),
                 if (onSettingsPressed != null)
-                  HpIconButton(
+                  _CompactHeaderIconButton(
                     tooltip: 'Settings',
                     onPressed: onSettingsPressed,
                     icon: Icons.settings_outlined,
@@ -77,6 +77,39 @@ class ItemsHeader extends StatelessWidget {
           ),
           const HpDivider(),
         ],
+      ),
+    );
+  }
+}
+
+class _CompactHeaderIconButton extends StatelessWidget {
+  const _CompactHeaderIconButton({
+    required this.icon,
+    required this.tooltip,
+    this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.hpColors;
+
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: context.hpRadii.small,
+        child: SizedBox.square(
+          dimension: 32,
+          child: Icon(
+            icon,
+            color: onPressed == null ? colors.inkSubtle : colors.inkMuted,
+            size: 18,
+          ),
+        ),
       ),
     );
   }
