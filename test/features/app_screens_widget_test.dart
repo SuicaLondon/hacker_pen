@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hacker_pen/src/core/ai/ai_content_repository.dart';
 import 'package:hacker_pen/src/core/ai/ai_provider.dart';
 import 'package:hacker_pen/src/core/ai/ai_settings.dart';
 import 'package:hacker_pen/src/core/ai/ai_settings_repository.dart';
+import 'package:hacker_pen/src/core/ai/ai_translation_mode.dart';
 import 'package:hacker_pen/src/core/api/models/hn_user.dart';
 import 'package:hacker_pen/src/core/design_system/design_system.dart';
 import 'package:hacker_pen/src/core/domain/hn_item.dart';
@@ -58,6 +60,9 @@ void main() {
     await tester.pumpWidget(
       _TestApp(
         repositories: [
+          RepositoryProvider<AiContentRepository>.value(
+            value: _FakeAiContentRepository(),
+          ),
           RepositoryProvider<ItemDetailRepository>.value(
             value: _FakeItemDetailRepository(),
           ),
@@ -77,6 +82,39 @@ void main() {
     expect(find.text('Comments 1'), findsOneWidget);
     expect(find.text('commenter'), findsOneWidget);
     expect(find.text('A useful comment'), findsOneWidget);
+    expect(find.byTooltip('Translate comment'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Translate comment'));
+    await tester.pumpAndSettle();
+    expect(find.text('Translated comment'), findsOneWidget);
+  });
+
+  testWidgets('ItemDetailPage shows summary actions and summary sheet', (
+    tester,
+  ) async {
+    final aiRepository = _FakeAiContentRepository(summary: 'Summary result');
+
+    await tester.pumpWidget(
+      _TestApp(
+        repositories: [
+          RepositoryProvider<AiContentRepository>.value(value: aiRepository),
+          RepositoryProvider<ItemDetailRepository>.value(
+            value: _FakeItemDetailRepository(storyUrl: 'https://example.com'),
+          ),
+        ],
+        child: const ItemDetailPage(itemId: 1),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Summarize'), findsOneWidget);
+    expect(find.text('Summary'), findsOneWidget);
+
+    await tester.tap(find.text('Summary'));
+    await tester.pumpAndSettle();
+
+    expect(aiRepository.summarizedUrls, ['https://example.com']);
+    expect(find.text('Summary result'), findsOneWidget);
   });
 
   testWidgets('UserProfilePage renders profile panels and refresh action', (
@@ -124,13 +162,26 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('AI Provider'), findsOneWidget);
     expect(find.text('API Key'), findsOneWidget);
+    expect(find.text('Translation display'), findsOneWidget);
+    expect(find.text('Replace original'), findsOneWidget);
+    expect(find.text('No API key saved'), findsOneWidget);
+
+    await tester.tap(find.text('Translation display'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Paragraph pairs').last);
+    await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField), 'secret');
-    await tester.tap(find.text('Save'));
+    await tester.drag(find.byType(ListView), const Offset(0, -260));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pumpAndSettle();
 
     expect(repository.saved?.hasApiKey, isFalse);
+    expect(repository.saved?.translationMode, AiTranslationMode.paragraphPairs);
     expect(repository.apiKeyReplacement, 'secret');
+    expect(find.text('API key saved'), findsOneWidget);
+    expect(find.text('This provider already has an API key.'), findsOneWidget);
     expect(find.text('Saved.'), findsOneWidget);
   });
 }
@@ -182,6 +233,10 @@ class _FakeItemsRepository implements ItemsRepository {
 }
 
 class _FakeItemDetailRepository implements ItemDetailRepository {
+  _FakeItemDetailRepository({this.storyUrl});
+
+  final String? storyUrl;
+
   @override
   Future<List<CommentNode>> fetchCommentsForStory(HnItem story) async {
     return [
@@ -203,7 +258,7 @@ class _FakeItemDetailRepository implements ItemDetailRepository {
 
   @override
   Future<HnItem> fetchStory(int itemId) async {
-    return const HnItem(
+    return HnItem(
       id: 1,
       type: 'story',
       time: 1,
@@ -211,6 +266,7 @@ class _FakeItemDetailRepository implements ItemDetailRepository {
       title: 'Self post title',
       score: 7,
       descendants: 1,
+      url: storyUrl,
       text: 'Self post body with useful details.',
       kids: [10],
     );
@@ -270,4 +326,32 @@ HnItem _story(int id) {
     descendants: id,
     url: 'https://example.com/story/$id',
   );
+}
+
+class _FakeAiContentRepository extends AiContentRepository {
+  _FakeAiContentRepository({this.summary = 'Summary'})
+    : super(
+        settingsRepository: _FakeAiSettingsRepository(
+          settings: AiSettings.defaultsFor(AiProviderId.openAiCompatible),
+        ),
+      );
+
+  final String summary;
+  final summarizedUrls = <String>[];
+
+  @override
+  Future<String> summarizeWebPageUrl(String url) async {
+    summarizedUrls.add(url);
+    return summary;
+  }
+
+  @override
+  Future<String> translateComment(String rawCommentText) async {
+    return 'Translated comment';
+  }
+
+  @override
+  Future<AiTranslationMode> loadTranslationMode() async {
+    return AiTranslationMode.replaceOriginal;
+  }
 }

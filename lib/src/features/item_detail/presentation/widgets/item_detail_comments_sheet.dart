@@ -127,7 +127,15 @@ class _ItemDetailCommentsSheetBody extends StatelessWidget {
       itemCount: state.comments.length,
       itemBuilder: (context, index) {
         return RepaintBoundary(
-          child: CommentTreeTile(node: state.comments[index]),
+          child: CommentTreeTile(
+            node: state.comments[index],
+            translations: state.commentTranslations,
+            translatingThreadRootIds: state.threadTranslationLoadingIds,
+            onTranslateComment: (comment) =>
+                context.read<ItemDetailCubit>().translateComment(comment),
+            onTranslateReplies: (node) =>
+                context.read<ItemDetailCubit>().translateCommentChildren(node),
+          ),
         );
       },
     );

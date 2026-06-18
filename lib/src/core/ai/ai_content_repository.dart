@@ -4,9 +4,11 @@ import 'package:http/http.dart' as http;
 import '../utils/text_sanitizer.dart';
 import 'ai_api_client.dart';
 import 'ai_exception.dart';
+import 'ai_prompts.dart';
 import 'ai_provider.dart';
 import 'ai_query_keys.dart';
 import 'ai_settings_repository.dart';
+import 'ai_translation_mode.dart';
 
 class AiContentRepository {
   AiContentRepository({
@@ -37,14 +39,12 @@ class AiContentRepository {
       queryFn: () => _aiApiClient.completeText(
         settings: settings,
         apiKey: apiKey,
-        systemPrompt:
-            'You summarize web pages for a Hacker News reader. '
-            'Be concise, factual, and preserve important technical details.',
-        userPrompt:
-            'Summarize the following web page in ${settings.targetLanguage}. '
-            'Return 3-6 bullet points and one short takeaway.\n\n'
-            'URL: $url\n\n'
-            '$pageText',
+        systemPrompt: AiPrompts.summarySystemPrompt,
+        userPrompt: AiPrompts.summaryUserPrompt(
+          targetLanguage: settings.targetLanguage,
+          url: url,
+          pageText: pageText,
+        ),
       ),
     ).fetch();
 
@@ -65,21 +65,31 @@ class AiContentRepository {
         provider: settings.providerId.storageKey,
         model: settings.model,
         language: settings.targetLanguage,
+        mode: settings.translationMode.storageKey,
         comment: commentText,
       ),
       queryFn: () => _aiApiClient.completeText(
         settings: settings,
         apiKey: apiKey,
-        systemPrompt:
-            'You translate Hacker News comments. Preserve code, URLs, '
-            'usernames, and quoted text. Do not add commentary.',
-        userPrompt:
-            'Translate this comment into ${settings.targetLanguage}:\n\n'
-            '$commentText',
+        systemPrompt: AiPrompts.commentTranslationSystemPrompt,
+        userPrompt: AiPrompts.commentTranslationUserPrompt(
+          mode: settings.translationMode,
+          targetLanguage: settings.targetLanguage,
+          commentText: commentText,
+        ),
+      ),
+      config: const QueryConfig(
+        staleDuration: Duration(days: 30),
+        cacheDuration: Duration(days: 30),
       ),
     ).fetch();
 
     return _requireCachedQueryData(state.data);
+  }
+
+  Future<AiTranslationMode> loadTranslationMode() async {
+    final settings = await _settingsRepository.load();
+    return settings.translationMode;
   }
 
   Future<String> _fetchReadableUrlText(String url) async {
