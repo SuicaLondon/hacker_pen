@@ -4,6 +4,7 @@ import 'ai_language.dart';
 import 'ai_provider.dart';
 import 'ai_secret_store.dart';
 import 'ai_settings.dart';
+import 'ai_translation_mode.dart';
 
 class AiSettingsRepository {
   AiSettingsRepository({
@@ -41,6 +42,10 @@ class AiSettingsRepository {
       _providerSettingKey(settings.providerId, 'target_language'),
       settings.targetLanguage.trim(),
     );
+    await preferences.setString(
+      _translationModeKey,
+      settings.translationMode.storageKey,
+    );
 
     final apiKey = apiKeyReplacement?.trim();
     if (apiKey != null && apiKey.isNotEmpty) {
@@ -69,6 +74,7 @@ class AiSettingsRepository {
     final storedLanguage = preferences.getString(
       _providerSettingKey(providerId, 'target_language'),
     );
+    final storedTranslationMode = preferences.getString(_translationModeKey);
 
     return defaults.copyWith(
       baseUrl: provider.defaultBaseUrl,
@@ -76,11 +82,15 @@ class AiSettingsRepository {
           ? storedModel
           : provider.defaultModel,
       targetLanguage: AiLanguage.normalize(storedLanguage),
+      translationMode: AiTranslationModeStorage.fromStorageKey(
+        storedTranslationMode,
+      ),
       hasApiKey: apiKey?.isNotEmpty == true,
     );
   }
 
   static const _selectedProviderKey = 'ai.selected_provider';
+  static const _translationModeKey = 'ai.translation_mode';
 
   static String _providerSettingKey(AiProviderId providerId, String name) {
     return 'ai.provider.${providerId.storageKey}.$name';

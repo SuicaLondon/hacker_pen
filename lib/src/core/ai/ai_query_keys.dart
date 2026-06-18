@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 
+import 'ai_prompts.dart';
+
 class AiQueryKeys {
   const AiQueryKeys._();
 
@@ -21,7 +23,7 @@ class AiQueryKeys {
       language,
       _hash(url.trim()),
       _hash(content),
-      _summaryPromptVersion,
+      AiPrompts.summaryPromptVersion,
     ];
   }
 
@@ -29,6 +31,7 @@ class AiQueryKeys {
     required String provider,
     required String model,
     required String language,
+    required String mode,
     required String comment,
   }) {
     return [
@@ -38,15 +41,13 @@ class AiQueryKeys {
       model,
       'commentTranslation',
       language,
+      mode,
       _hash(comment),
-      _translationPromptVersion,
+      AiPrompts.translationPromptVersion,
     ];
   }
 
   static String _hash(String value) {
     return sha256.convert(utf8.encode(value.trim())).toString();
   }
-
-  static const _summaryPromptVersion = 'summary-prompt-v1';
-  static const _translationPromptVersion = 'translation-prompt-v1';
 }

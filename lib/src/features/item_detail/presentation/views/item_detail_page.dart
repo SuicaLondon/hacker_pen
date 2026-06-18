@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../../../../core/ai/ai_content_repository.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../../../core/domain/hn_item.dart';
 import '../../../../core/utils/text_sanitizer.dart';
@@ -22,8 +23,10 @@ class ItemDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          ItemDetailCubit(context.read<ItemDetailRepository>())..load(itemId),
+      create: (_) => ItemDetailCubit(
+        context.read<ItemDetailRepository>(),
+        context.read<AiContentRepository>(),
+      )..load(itemId),
       child: const _ItemDetailView(),
     );
   }
@@ -77,24 +80,41 @@ class _ItemDetailViewState extends State<_ItemDetailView> {
                   child: _AnimatedStoryHeader(
                     isVisible: _isHeaderVisible,
                     story: story,
+                    onSummaryPressed: story.url?.isNotEmpty == true
+                        ? () => showStorySummarySheet(context)
+                        : null,
                   ),
                 ),
           floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
           floatingActionButton: story == null
               ? null
-              : ItemDetailCommentsFab(
-                  count: story.descendants,
-                  isLoading:
-                      state.commentsStatus ==
-                          ItemDetailCommentsStatus.loading ||
-                      state.commentsStatus == ItemDetailCommentsStatus.initial,
-                  onPressed:
-                      state.commentsStatus ==
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  spacing: 10,
+                  children: [
+                    if (story.url?.isNotEmpty == true)
+                      _SummaryFab(
+                        isLoading:
+                            state.summaryStatus == ItemDetailAiStatus.loading,
+                        onPressed: () => showStorySummarySheet(context),
+                      ),
+                    ItemDetailCommentsFab(
+                      count: story.descendants,
+                      isLoading:
+                          state.commentsStatus ==
                               ItemDetailCommentsStatus.loading ||
                           state.commentsStatus ==
-                              ItemDetailCommentsStatus.initial
-                      ? null
-                      : () => showItemDetailCommentsSheet(context),
+                              ItemDetailCommentsStatus.initial,
+                      onPressed:
+                          state.commentsStatus ==
+                                  ItemDetailCommentsStatus.loading ||
+                              state.commentsStatus ==
+                                  ItemDetailCommentsStatus.initial
+                          ? null
+                          : () => showItemDetailCommentsSheet(context),
+                    ),
+                  ],
                 ),
           body: Builder(
             builder: (context) {
@@ -197,10 +217,15 @@ class _StoryAppBarTitle extends StatelessWidget {
 }
 
 class _AnimatedStoryHeader extends StatelessWidget {
-  const _AnimatedStoryHeader({required this.isVisible, required this.story});
+  const _AnimatedStoryHeader({
+    required this.isVisible,
+    required this.story,
+    required this.onSummaryPressed,
+  });
 
   final bool isVisible;
   final HnItem story;
+  final VoidCallback? onSummaryPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -233,7 +258,11 @@ class _AnimatedStoryHeader extends StatelessWidget {
                       icon: Icons.arrow_back,
                     ),
                     Expanded(child: _StoryAppBarTitle(story: story)),
-                    const SizedBox(width: 38),
+                    HpIconButton(
+                      tooltip: 'Summarize',
+                      onPressed: onSummaryPressed,
+                      icon: Icons.summarize_outlined,
+                    ),
                   ],
                 ),
               ),
@@ -442,6 +471,162 @@ class _StoryWebViewState extends State<_StoryWebView> {
     } catch (_) {
       widget.onHeaderVisibilityChanged(true);
     }
+  }
+}
+
+class _SummaryFab extends StatelessWidget {
+  const _SummaryFab({required this.isLoading, required this.onPressed});
+
+  final bool isLoading;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.hpColors;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        border: Border.all(color: colors.ruleStrong),
+        borderRadius: context.hpRadii.medium,
+      ),
+      child: InkWell(
+        onTap: isLoading ? null : onPressed,
+        borderRadius: context.hpRadii.medium,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 8,
+            children: [
+              if (isLoading)
+                SizedBox.square(
+                  dimension: 16,
+                  child: CircularProgressIndicator(
+                    color: colors.inkMuted,
+                    strokeWidth: 2,
+                  ),
+                )
+              else
+                Icon(Icons.summarize_outlined, size: 16, color: colors.brand),
+              Text(
+                isLoading ? 'Summarizing' : 'Summary',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: isLoading ? colors.inkSubtle : colors.ink,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+void showStorySummarySheet(BuildContext context) {
+  final cubit = context.read<ItemDetailCubit>();
+  if (cubit.state.summaryStatus == ItemDetailAiStatus.idle) {
+    cubit.summarizeStory();
+  }
+
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) {
+      return BlocProvider.value(
+        value: cubit,
+        child: DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.55,
+          minChildSize: 0.35,
+          maxChildSize: 0.92,
+          builder: (context, scrollController) {
+            return _StorySummarySheet(scrollController: scrollController);
+          },
+        ),
+      );
+    },
+  );
+}
+
+class _StorySummarySheet extends StatelessWidget {
+  const _StorySummarySheet({required this.scrollController});
+
+  final ScrollController scrollController;
+
+  @override
+  Widget build(BuildContext context) {
+    return HpSheetScaffold(
+      title: 'Summary',
+      trailing: HpIconButton(
+        tooltip: 'Close',
+        onPressed: () => Navigator.of(context).pop(),
+        icon: Icons.close,
+      ),
+      body: BlocBuilder<ItemDetailCubit, ItemDetailState>(
+        builder: (context, state) {
+          return switch (state.summaryStatus) {
+            ItemDetailAiStatus.loading => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            ItemDetailAiStatus.failure => _SummaryErrorView(
+              message: state.summaryErrorMessage ?? 'Failed to summarize.',
+            ),
+            ItemDetailAiStatus.success => ListView(
+              controller: scrollController,
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
+              children: [
+                SelectableText(
+                  state.summaryText ?? '',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: context.hpColors.ink,
+                    height: 1.42,
+                  ),
+                ),
+              ],
+            ),
+            ItemDetailAiStatus.idle => const Center(
+              child: CircularProgressIndicator(),
+            ),
+          };
+        },
+      ),
+    );
+  }
+}
+
+class _SummaryErrorView extends StatelessWidget {
+  const _SummaryErrorView({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.hpColors;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: colors.inkMuted),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => context.read<ItemDetailCubit>().summarizeStory(),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry summary'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

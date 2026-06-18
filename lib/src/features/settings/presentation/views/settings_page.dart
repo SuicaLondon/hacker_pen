@@ -6,6 +6,7 @@ import '../../../../core/ai/ai_language.dart';
 import '../../../../core/ai/ai_provider.dart';
 import '../../../../core/ai/ai_settings.dart';
 import '../../../../core/ai/ai_settings_repository.dart';
+import '../../../../core/ai/ai_translation_mode.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -144,6 +145,14 @@ class _AiSettingsFormState extends State<_AiSettingsForm> {
                     enabled: !_isSaving,
                     onTap: () => _selectLanguage(settings),
                   ),
+                  const SizedBox(height: 12),
+                  _SettingsActionRow(
+                    title: 'Translation display',
+                    value: settings.translationMode.label,
+                    subtitle: settings.translationMode.description,
+                    enabled: !_isSaving,
+                    onTap: () => _selectTranslationMode(settings),
+                  ),
                 ],
               ),
               const SizedBox(height: 26),
@@ -179,32 +188,11 @@ class _AiSettingsFormState extends State<_AiSettingsForm> {
                       return null;
                     },
                   ),
-                  const SizedBox(width: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        settings.hasApiKey
-                            ? Icons.lock_outline
-                            : Icons.lock_open_outlined,
-                        size: 17,
-                        color: colors.inkMuted,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          settings.hasApiKey
-                              ? 'Saved in secure storage.'
-                              : 'No key saved.',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: colors.inkMuted),
-                        ),
-                      ),
-                      if (settings.hasApiKey)
-                        TextButton(
-                          onPressed: _isSaving ? null : _clearApiKey,
-                          child: const Text('Clear'),
-                        ),
-                    ],
+                  const SizedBox(height: 10),
+                  _ApiKeyStatusBanner(
+                    hasApiKey: settings.hasApiKey,
+                    isSaving: _isSaving,
+                    onClear: _clearApiKey,
                   ),
                 ],
               ),
@@ -263,7 +251,7 @@ class _AiSettingsFormState extends State<_AiSettingsForm> {
       context: context,
       useSafeArea: true,
       builder: (context) {
-        return ColoredBox(
+        return Material(
           color: context.hpColors.paper,
           child: ListView.separated(
             shrinkWrap: true,
@@ -291,6 +279,44 @@ class _AiSettingsFormState extends State<_AiSettingsForm> {
 
     setState(() {
       _settings = settings.copyWith(targetLanguage: selectedLanguage);
+      _statusMessage = null;
+    });
+  }
+
+  Future<void> _selectTranslationMode(AiSettings settings) async {
+    final selectedMode = await showModalBottomSheet<AiTranslationMode>(
+      context: context,
+      useSafeArea: true,
+      builder: (context) {
+        return Material(
+          color: context.hpColors.paper,
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: AiTranslationMode.values.length,
+            separatorBuilder: (_, _) => const HpDivider(),
+            itemBuilder: (context, index) {
+              final mode = AiTranslationMode.values[index];
+              final isSelected = mode == settings.translationMode;
+              return ListTile(
+                title: Text(mode.label),
+                subtitle: Text(mode.description),
+                trailing: isSelected ? const Icon(Icons.check) : null,
+                onTap: () => Navigator.of(context).pop(mode),
+              );
+            },
+          ),
+        );
+      },
+    );
+
+    if (!mounted ||
+        selectedMode == null ||
+        selectedMode == settings.translationMode) {
+      return;
+    }
+
+    setState(() {
+      _settings = settings.copyWith(translationMode: selectedMode);
       _statusMessage = null;
     });
   }
@@ -358,16 +384,104 @@ class _AiSettingsFormState extends State<_AiSettingsForm> {
   }
 }
 
+class _ApiKeyStatusBanner extends StatelessWidget {
+  const _ApiKeyStatusBanner({
+    required this.hasApiKey,
+    required this.isSaving,
+    required this.onClear,
+  });
+
+  final bool hasApiKey;
+  final bool isSaving;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.hpColors;
+    final activeColor = colors.brand;
+    final statusColor = hasApiKey ? activeColor : colors.inkMuted;
+    final backgroundColor = hasApiKey
+        ? activeColor.withValues(alpha: 0.1)
+        : colors.surfaceMuted.withValues(alpha: 0.58);
+    final borderColor = hasApiKey
+        ? activeColor.withValues(alpha: 0.64)
+        : colors.rule;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        border: Border.all(color: borderColor),
+        borderRadius: context.hpRadii.medium,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(11, 9, 8, 9),
+        child: Row(
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: hasApiKey ? activeColor : Colors.transparent,
+                border: Border.all(color: statusColor),
+                borderRadius: context.hpRadii.small,
+              ),
+              child: SizedBox.square(
+                dimension: 24,
+                child: Icon(
+                  hasApiKey ? Icons.lock_outline : Icons.lock_open_outlined,
+                  size: 16,
+                  color: hasApiKey ? colors.surface : statusColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    hasApiKey ? 'API key saved' : 'No API key saved',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: hasApiKey ? activeColor : colors.inkMuted,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    hasApiKey
+                        ? 'This provider already has an API key.'
+                        : 'Add a key to enable AI actions.',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: colors.inkMuted),
+                  ),
+                ],
+              ),
+            ),
+            if (hasApiKey) ...[
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: isSaving ? null : onClear,
+                child: const Text('Clear'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _SettingsActionRow extends StatelessWidget {
   const _SettingsActionRow({
     required this.title,
     required this.value,
     required this.enabled,
     required this.onTap,
+    this.subtitle,
   });
 
   final String title;
   final String value;
+  final String? subtitle;
   final bool enabled;
   final VoidCallback onTap;
 
@@ -405,6 +519,15 @@ class _SettingsActionRow extends StatelessWidget {
                         color: enabled ? colors.ink : colors.inkSubtle,
                       ),
                     ),
+                    if (subtitle case final subtitle?) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: colors.inkMuted),
+                      ),
+                    ],
                   ],
                 ),
               ),

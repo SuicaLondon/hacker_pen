@@ -4,6 +4,7 @@ import 'package:hacker_pen/src/core/ai/ai_provider.dart';
 import 'package:hacker_pen/src/core/ai/ai_secret_store.dart';
 import 'package:hacker_pen/src/core/ai/ai_settings.dart';
 import 'package:hacker_pen/src/core/ai/ai_settings_repository.dart';
+import 'package:hacker_pen/src/core/ai/ai_translation_mode.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -20,6 +21,7 @@ void main() {
     expect(settings.baseUrl, 'https://api.openai.com/v1');
     expect(settings.model, 'gpt-4.1-mini');
     expect(settings.targetLanguage, 'Chinese (Traditional)');
+    expect(settings.translationMode, AiTranslationMode.replaceOriginal);
     expect(settings.hasApiKey, isFalse);
   });
 
@@ -37,6 +39,7 @@ void main() {
         baseUrl: 'https://gateway.example/v1',
         model: 'gpt-4o',
         targetLanguage: 'Japanese',
+        translationMode: AiTranslationMode.paragraphPairs,
         hasApiKey: false,
       ),
       apiKeyReplacement: ' open-key ',
@@ -47,6 +50,7 @@ void main() {
         baseUrl: 'https://trust.example/v1',
         model: 'auto',
         targetLanguage: 'French',
+        translationMode: AiTranslationMode.paragraphPairs,
         hasApiKey: false,
       ),
       apiKeyReplacement: 'trust-key',
@@ -60,9 +64,11 @@ void main() {
     expect(selectedSettings.providerId, AiProviderId.apiTrust);
     expect(selectedSettings.baseUrl, '');
     expect(selectedSettings.model, 'auto');
+    expect(selectedSettings.translationMode, AiTranslationMode.paragraphPairs);
     expect(selectedSettings.hasApiKey, isTrue);
     expect(openAiSettings.baseUrl, 'https://api.openai.com/v1');
     expect(openAiSettings.model, 'gpt-4o');
+    expect(openAiSettings.translationMode, AiTranslationMode.paragraphPairs);
     expect(openAiSettings.hasApiKey, isTrue);
     expect(
       await secretStore.readApiKey(AiProviderId.openAiCompatible),
@@ -135,6 +141,23 @@ void main() {
     expect(settings.model, 'gpt-4.1-mini');
     expect(settings.targetLanguage, 'Chinese (Traditional)');
   });
+
+  test(
+    'normalizes unknown stored translation mode to replace original',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'ai.translation_mode': 'unknown',
+      });
+      final repository = AiSettingsRepository(
+        secretStore: _FakeAiSecretStore(),
+        sharedPreferences: SharedPreferences.getInstance(),
+      );
+
+      final settings = await repository.load();
+
+      expect(settings.translationMode, AiTranslationMode.replaceOriginal);
+    },
+  );
 }
 
 class _FakeAiSecretStore extends AiSecretStore {

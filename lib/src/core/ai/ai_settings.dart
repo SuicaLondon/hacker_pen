@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 
 import 'ai_language.dart';
 import 'ai_provider.dart';
+import 'ai_translation_mode.dart';
 
 class AiSettings extends Equatable {
   const AiSettings({
@@ -9,6 +10,7 @@ class AiSettings extends Equatable {
     required this.baseUrl,
     required this.model,
     required this.targetLanguage,
+    required this.translationMode,
     required this.hasApiKey,
   });
 
@@ -19,6 +21,7 @@ class AiSettings extends Equatable {
       baseUrl: provider.defaultBaseUrl,
       model: provider.defaultModel,
       targetLanguage: AiLanguage.defaultLanguage,
+      translationMode: AiTranslationMode.replaceOriginal,
       hasApiKey: false,
     );
   }
@@ -27,6 +30,7 @@ class AiSettings extends Equatable {
   final String baseUrl;
   final String model;
   final String targetLanguage;
+  final AiTranslationMode translationMode;
   final bool hasApiKey;
 
   AiSettings copyWith({
@@ -34,6 +38,7 @@ class AiSettings extends Equatable {
     String? baseUrl,
     String? model,
     String? targetLanguage,
+    AiTranslationMode? translationMode,
     bool? hasApiKey,
   }) {
     return AiSettings(
@@ -41,6 +46,7 @@ class AiSettings extends Equatable {
       baseUrl: baseUrl ?? this.baseUrl,
       model: model ?? this.model,
       targetLanguage: targetLanguage ?? this.targetLanguage,
+      translationMode: translationMode ?? this.translationMode,
       hasApiKey: hasApiKey ?? this.hasApiKey,
     );
   }
@@ -51,6 +57,7 @@ class AiSettings extends Equatable {
     baseUrl,
     model,
     targetLanguage,
+    translationMode,
     hasApiKey,
   ];
 }

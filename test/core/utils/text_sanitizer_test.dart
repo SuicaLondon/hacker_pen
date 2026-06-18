@@ -15,5 +15,13 @@ void main() {
 
       expect(sanitized, 'Tom & Jerry said "hi"');
     });
+
+    test('decodes numeric entities commonly found in comment URLs', () {
+      final sanitized = TextSanitizer.stripHtml(
+        '<p>https:&#x2F;&#x2F;example.com&#47;path?x=1&amp;y=2</p>',
+      );
+
+      expect(sanitized, 'https://example.com/path?x=1&y=2');
+    });
   });
 }

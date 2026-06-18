@@ -3,6 +3,7 @@ import 'package:hacker_pen/src/core/ai/ai_api_client.dart';
 import 'package:hacker_pen/src/core/ai/ai_exception.dart';
 import 'package:hacker_pen/src/core/ai/ai_provider.dart';
 import 'package:hacker_pen/src/core/ai/ai_settings.dart';
+import 'package:hacker_pen/src/core/ai/ai_translation_mode.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
@@ -88,5 +89,6 @@ const _settings = AiSettings(
   baseUrl: 'https://api.test/v1',
   model: 'test-model',
   targetLanguage: 'English',
+  translationMode: AiTranslationMode.replaceOriginal,
   hasApiKey: true,
 );
