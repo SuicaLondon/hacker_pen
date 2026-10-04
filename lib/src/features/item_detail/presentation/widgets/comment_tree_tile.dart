@@ -375,13 +375,7 @@ class _TranslateCommentButton extends StatelessWidget {
           dimension: 28,
           child: Center(
             child: isLoading
-                ? SizedBox.square(
-                    dimension: 14,
-                    child: CircularProgressIndicator(
-                      color: colors.inkMuted,
-                      strokeWidth: 2,
-                    ),
-                  )
+                ? const HpActivityIndicator(size: 14)
                 : Icon(
                     isFailure
                         ? Icons.error_outline
@@ -423,10 +417,7 @@ class _TranslateRepliesButton extends StatelessWidget {
           dimension: 16,
           child: Center(
             child: isLoading
-                ? CircularProgressIndicator(
-                    color: colors.inkMuted,
-                    strokeWidth: 2,
-                  )
+                ? const HpActivityIndicator(size: 16)
                 : Icon(Icons.translate, size: 15, color: colors.brand),
           ),
         ),

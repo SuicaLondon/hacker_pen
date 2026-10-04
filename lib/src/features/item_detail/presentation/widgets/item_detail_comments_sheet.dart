@@ -34,9 +34,20 @@ void showItemDetailCommentsSheet(BuildContext context) {
 }
 
 class ItemDetailCommentsSheet extends StatelessWidget {
-  const ItemDetailCommentsSheet({required this.scrollController, super.key});
+  const ItemDetailCommentsSheet({
+    required this.scrollController,
+    this.onClose,
+    this.showHeader = true,
+    this.onHeaderDragUpdate,
+    this.onHeaderDragEnd,
+    super.key,
+  });
 
   final ScrollController scrollController;
+  final VoidCallback? onClose;
+  final bool showHeader;
+  final ValueChanged<double>? onHeaderDragUpdate;
+  final VoidCallback? onHeaderDragEnd;
 
   @override
   Widget build(BuildContext context) {
@@ -44,21 +55,46 @@ class ItemDetailCommentsSheet extends StatelessWidget {
       builder: (context, state) {
         final count = state.story?.descendants ?? 0;
 
-        return HpSheetScaffold(
-          title: 'Comments $count',
-          leading: HpIconButton(
-            tooltip: 'Reload comments',
-            onPressed: () => context.read<ItemDetailCubit>().reloadComments(),
-            icon: Icons.refresh,
-          ),
-          trailing: HpIconButton(
-            tooltip: 'Close',
-            onPressed: () => Navigator.of(context).pop(),
-            icon: Icons.close,
-          ),
-          body: _ItemDetailCommentsSheetBody(
-            scrollController: scrollController,
-            state: state,
+        return ClipRRect(
+          borderRadius: showHeader
+              ? const BorderRadius.vertical(top: Radius.circular(4))
+              : BorderRadius.zero,
+          child: ColoredBox(
+            color: context.hpColors.paper,
+            child: Column(
+              children: [
+                Offstage(
+                  offstage: !showHeader,
+                  child: GestureDetector(
+                    onVerticalDragUpdate: onHeaderDragUpdate == null
+                        ? null
+                        : (details) => onHeaderDragUpdate!(details.delta.dy),
+                    onVerticalDragEnd: onHeaderDragEnd == null
+                        ? null
+                        : (_) => onHeaderDragEnd!(),
+                    child: HpTopBar(
+                      title: 'Comments $count',
+                      leading: HpIconButton(
+                        tooltip: 'Reload comments',
+                        onPressed: () =>
+                            context.read<ItemDetailCubit>().reloadComments(),
+                        icon: Icons.refresh,
+                      ),
+                      trailing: HpIconButton(
+                        tooltip: 'Close',
+                        onPressed: onClose ?? () => Navigator.of(context).pop(),
+                        icon: Icons.close,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ItemDetailCommentsBody(
+                    scrollController: scrollController,
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -66,22 +102,24 @@ class ItemDetailCommentsSheet extends StatelessWidget {
   }
 }
 
-class _ItemDetailCommentsSheetBody extends StatelessWidget {
-  const _ItemDetailCommentsSheetBody({
-    required this.scrollController,
-    required this.state,
-  });
+class ItemDetailCommentsBody extends StatelessWidget {
+  const ItemDetailCommentsBody({this.scrollController, super.key});
 
-  final ScrollController scrollController;
-  final ItemDetailState state;
+  final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context) {
+    return BlocBuilder<ItemDetailCubit, ItemDetailState>(
+      builder: (context, state) => _buildBody(context, state),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, ItemDetailState state) {
     final colors = context.hpColors;
 
     if (state.commentsStatus == ItemDetailCommentsStatus.loading ||
         state.commentsStatus == ItemDetailCommentsStatus.initial) {
-      return const Center(child: CircularProgressIndicator());
+      return const HpLoadingView(label: 'Loading comments');
     }
 
     if (state.commentsStatus == ItemDetailCommentsStatus.failure) {
@@ -111,14 +149,19 @@ class _ItemDetailCommentsSheetBody extends StatelessWidget {
     if (state.comments.isEmpty) {
       return Center(
         child: Text(
-          'No comments yet.',
-          style: TextStyle(color: colors.inkMuted),
+          'NO COMMENTS YET',
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: colors.inkMuted,
+            fontFamily: context.hpText.monoFamily,
+            letterSpacing: 1,
+          ),
         ),
       );
     }
 
     return ListView.builder(
       controller: scrollController,
+      primary: false,
       // TODO: switch to scrollCacheExtent after the project pins a Flutter SDK
       // where that API accepts numeric cache extents.
       // ignore: deprecated_member_use
@@ -128,6 +171,7 @@ class _ItemDetailCommentsSheetBody extends StatelessWidget {
       itemBuilder: (context, index) {
         return RepaintBoundary(
           child: CommentTreeTile(
+            key: ValueKey(state.comments[index].comment.id),
             node: state.comments[index],
             translations: state.commentTranslations,
             translatingThreadRootIds: state.threadTranslationLoadingIds,

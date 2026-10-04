@@ -15,6 +15,18 @@ void main() {
     expect(theme.colorScheme.primary, colors.brand);
   });
 
+  test('dark theme exposes the HackerPen editorial palette', () {
+    final theme = HpTheme.dark();
+    final colors = theme.extension<HpColors>()!;
+
+    expect(theme.brightness, Brightness.dark);
+    expect(colors.paper, const Color(0xFF0A0A0A));
+    expect(colors.brand, const Color(0xFF00BC52));
+    expect(colors.ink, const Color(0xFFF2F4F0));
+    expect(theme.scaffoldBackgroundColor, colors.paper);
+    expect(theme.colorScheme.primary, colors.brand);
+  });
+
   testWidgets('context extensions resolve design tokens', (tester) async {
     late HpColors colors;
     late HpTypography typography;

@@ -1,541 +1,679 @@
+import '../widgets/settings_choices.dart';
+import '../widgets/settings_screen.dart';
+import '../widgets/settings_group.dart';
+import '../widgets/settings_cell.dart';
+import '../../../../core/utils/mask_api_key.dart';
+import 'api_keys_page.dart';
+import 'api_key_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/design_system/design_system.dart';
+import '../../../../core/settings/reading_preferences_cubit.dart';
 import '../../../../core/ai/ai_language.dart';
 import '../../../../core/ai/ai_provider.dart';
 import '../../../../core/ai/ai_settings.dart';
 import '../../../../core/ai/ai_settings_repository.dart';
 import '../../../../core/ai/ai_translation_mode.dart';
+import 'privacy_policy_page.dart';
 
-class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
+enum _SettingsCategory { ai, translation, privacy }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(MediaQuery.paddingOf(context).top + 48),
-        child: HpTopBar(
-          title: 'Settings',
-          leading: HpIconButton(
-            tooltip: 'Back',
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: Icons.arrow_back,
-          ),
-        ),
-      ),
-      body: const _AiSettingsForm(),
-    );
-  }
-}
+class SettingsPage extends StatefulWidget {
+  const SettingsPage({super.key, this.desktop = false});
 
-class _AiSettingsForm extends StatefulWidget {
-  const _AiSettingsForm();
+  final bool desktop;
 
   @override
-  State<_AiSettingsForm> createState() => _AiSettingsFormState();
+  State<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _AiSettingsFormState extends State<_AiSettingsForm> {
-  final _formKey = GlobalKey<FormState>();
-  final _apiKeyController = TextEditingController();
-
-  late Future<AiSettings> _settingsFuture;
+class _SettingsPageState extends State<SettingsPage> {
+  late final Future<AiSettings> _initialSettings;
   AiSettings? _settings;
-  var _obscureApiKey = true;
-  var _isSaving = false;
-  String? _statusMessage;
+  List<AiProviderDefinition> _providers = [];
+  bool _isSaving = false;
+  bool _isSavingReading = false;
+  int _keyCount = 0;
+  Map<AiProviderId, String?> _maskedKeys = {};
+  _SettingsCategory _category = _SettingsCategory.ai;
 
   @override
   void initState() {
     super.initState();
-    _settingsFuture = _loadSettings();
+    _initialSettings = _loadSettings();
   }
 
-  @override
-  void dispose() {
-    _apiKeyController.dispose();
-    super.dispose();
+  Future<AiSettings> _loadSettings() async {
+    final repository = context.read<AiSettingsRepository>();
+    _providers = await repository.loadProviders();
+    final keys = await Future.wait(
+      _providers.map(
+        (provider) async => MapEntry(
+          provider.id,
+          maskApiKey(await repository.readApiKey(provider.id)),
+        ),
+      ),
+    );
+    _maskedKeys = Map.fromEntries(keys);
+    _keyCount = _maskedKeys.values.whereType<String>().length;
+    return repository.load();
   }
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.hpColors;
-
-    return FutureBuilder<AiSettings>(
-      future: _settingsFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError || _settings == null) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                snapshot.error?.toString() ?? 'Failed to load settings.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: colors.inkMuted),
-              ),
-            ),
+    if (widget.desktop) return _buildDesktop(context);
+    return SettingsScreen(
+      title: 'Settings',
+      body: FutureBuilder<AiSettings>(
+        future: _initialSettings,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const HpLoadingView(label: 'Loading settings');
+          }
+          final settings = _settings ?? snapshot.data;
+          if (settings == null) {
+            return Center(child: Text('Failed to load settings.'));
+          }
+          final provider = _providers.firstWhere(
+            (provider) => provider.id == settings.providerId,
           );
-        }
-
-        final settings = _settings!;
-        final provider = AiProviders.definitionFor(settings.providerId);
-
-        return Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(18, 20, 18, 28),
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(18, 24, 18, 32),
             children: [
-              HpSettingsSection(
-                title: 'AI Provider',
+              SettingsGroup(
+                title: 'AI',
                 children: [
-                  DropdownButtonFormField<AiProviderId>(
-                    initialValue: settings.providerId,
-                    decoration: const InputDecoration(labelText: 'Provider'),
-                    items: AiProviders.all
-                        .map((provider) {
-                          return DropdownMenuItem<AiProviderId>(
-                            value: provider.id,
-                            enabled: provider.isAvailable,
-                            child: Text(
-                              provider.isAvailable
-                                  ? provider.label
-                                  : '${provider.label} (Coming soon)',
-                            ),
-                          );
-                        })
-                        .toList(growable: false),
-                    onChanged: _isSaving ? null : _handleProviderChanged,
+                  SettingsCell(
+                    title: 'Providers & keys',
+                    value: _keyCount == 0
+                        ? 'No keys added'
+                        : '$_keyCount ${_keyCount == 1 ? 'key saved' : 'keys saved'}',
+                    onTap: _isSaving ? null : () => _editApiKey(settings),
                   ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    key: ValueKey('model-${settings.providerId.storageKey}'),
-                    initialValue: settings.model,
-                    decoration: const InputDecoration(labelText: 'Model'),
-                    items: provider.models
-                        .map((model) {
-                          return DropdownMenuItem<String>(
-                            value: model,
-                            child: Text(model),
-                          );
-                        })
-                        .toList(growable: false),
-                    onChanged: _isSaving
-                        ? null
-                        : (model) {
-                            if (model == null || model == settings.model) {
-                              return;
-                            }
-                            setState(() {
-                              _settings = settings.copyWith(model: model);
-                              _statusMessage = null;
-                            });
-                          },
-                  ),
-                  const SizedBox(height: 12),
-                  _SettingsActionRow(
-                    title: 'Target language',
-                    value: settings.targetLanguage,
-                    enabled: !_isSaving,
-                    onTap: () => _selectLanguage(settings),
-                  ),
-                  const SizedBox(height: 12),
-                  _SettingsActionRow(
-                    title: 'Translation display',
-                    value: settings.translationMode.label,
-                    subtitle: settings.translationMode.description,
-                    enabled: !_isSaving,
-                    onTap: () => _selectTranslationMode(settings),
+                  SettingsCell(
+                    title: 'Active model',
+                    value: settings.hasApiKey && settings.model.isNotEmpty
+                        ? '${provider.label} · ${settings.model}'
+                        : 'Not selected',
+                    onTap: _isSaving ? null : () => _selectModel(settings),
                   ),
                 ],
               ),
-              const SizedBox(height: 26),
-              HpSettingsSection(
-                title: 'API Key',
-                children: [
-                  TextFormField(
-                    controller: _apiKeyController,
-                    enabled: !_isSaving,
-                    obscureText: _obscureApiKey,
-                    textInputAction: TextInputAction.done,
-                    decoration: InputDecoration(
-                      labelText: settings.hasApiKey
-                          ? 'Replace saved key'
-                          : 'API key',
-                      suffixIcon: IconButton(
-                        tooltip: _obscureApiKey ? 'Show key' : 'Hide key',
-                        onPressed: () {
-                          setState(() => _obscureApiKey = !_obscureApiKey);
-                        },
-                        icon: Icon(
-                          _obscureApiKey
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
+              Padding(
+                padding: const EdgeInsets.only(top: 28),
+                child: SettingsGroup(
+                  title: 'Translation',
+                  children: [
+                    SettingsCell(
+                      title: 'Language',
+                      value: settings.targetLanguage,
+                      onTap: _isSaving
+                          ? null
+                          : () async {
+                              final language = await _choose(
+                                title: 'Language',
+                                selected: settings.targetLanguage,
+                                values: AiLanguage.common,
+                                label: (language) => language,
+                              );
+                              if (language != null &&
+                                  language != settings.targetLanguage) {
+                                await _save(
+                                  settings.copyWith(targetLanguage: language),
+                                );
+                              }
+                            },
+                    ),
+                    SettingsCell(
+                      title: 'Display',
+                      value: settings.translationMode.label,
+                      onTap: _isSaving
+                          ? null
+                          : () async {
+                              final mode = await _choose(
+                                title: 'Translation display',
+                                selected: settings.translationMode,
+                                values: AiTranslationMode.values,
+                                label: (mode) => mode.label,
+                                description: (mode) => mode.description,
+                              );
+                              if (mode != null &&
+                                  mode != settings.translationMode) {
+                                await _save(
+                                  settings.copyWith(translationMode: mode),
+                                );
+                              }
+                            },
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 28),
+                child: SettingsGroup(
+                  title: 'Reading',
+                  children: [
+                    BlocBuilder<ReadingPreferencesCubit, bool>(
+                      builder: (context, enabled) => SwitchListTile.adaptive(
+                        title: const Text('Extend page to top'),
+                        subtitle: const Text(
+                          'Show web content behind the status bar when the header hides.',
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        activeTrackColor: context.hpColors.brand,
+                        value: enabled,
+                        onChanged: _isSavingReading
+                            ? null
+                            : _saveReadingPreference,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 28),
+                child: SettingsGroup(
+                  title: 'Privacy',
+                  children: [
+                    SettingsCell(
+                      title: 'Privacy Policy',
+                      value: 'Local storage and third-party services',
+                      onTap: () => Navigator.of(context).push<void>(
+                        MaterialPageRoute(
+                          builder: (_) => const PrivacyPolicyPage(),
                         ),
                       ),
                     ),
-                    validator: (value) {
-                      if (!settings.hasApiKey &&
-                          (value?.trim() ?? '').isEmpty) {
-                        return 'API key is required.';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  _ApiKeyStatusBanner(
-                    hasApiKey: settings.hasApiKey,
-                    isSaving: _isSaving,
-                    onClear: _clearApiKey,
-                  ),
-                ],
-              ),
-              if (_statusMessage != null) ...[
-                const SizedBox(height: 18),
-                Text(
-                  _statusMessage!,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: colors.inkMuted),
+                  ],
                 ),
-              ],
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: _isSaving ? null : _saveSettings,
-                icon: _isSaving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.save_outlined),
-                label: const Text('Save'),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                child: Text(
+                  _isSaving ? 'Saving…' : 'Changes are saved automatically.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: context.hpColors.inkMuted,
+                  ),
+                ),
               ),
             ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<AiSettings> _loadSettings({AiProviderId? providerId}) async {
-    final settings = await context.read<AiSettingsRepository>().load(
-      providerId: providerId,
-    );
-    _applySettings(settings);
-    return settings;
-  }
-
-  void _applySettings(AiSettings settings) {
-    _settings = settings;
-    _apiKeyController.clear();
-  }
-
-  void _handleProviderChanged(AiProviderId? providerId) {
-    if (providerId == null || providerId == _settings?.providerId) return;
-
-    setState(() {
-      _statusMessage = null;
-      _settingsFuture = _loadSettings(providerId: providerId);
-    });
-  }
-
-  Future<void> _selectLanguage(AiSettings settings) async {
-    final selectedLanguage = await showModalBottomSheet<String>(
-      context: context,
-      useSafeArea: true,
-      builder: (context) {
-        return Material(
-          color: context.hpColors.paper,
-          child: ListView.separated(
-            shrinkWrap: true,
-            itemCount: AiLanguage.common.length,
-            separatorBuilder: (_, _) => const HpDivider(),
-            itemBuilder: (context, index) {
-              final language = AiLanguage.common[index];
-              final isSelected = language == settings.targetLanguage;
-              return ListTile(
-                title: Text(language),
-                trailing: isSelected ? const Icon(Icons.check) : null,
-                onTap: () => Navigator.of(context).pop(language),
-              );
-            },
-          ),
-        );
-      },
-    );
-
-    if (!mounted ||
-        selectedLanguage == null ||
-        selectedLanguage == settings.targetLanguage) {
-      return;
-    }
-
-    setState(() {
-      _settings = settings.copyWith(targetLanguage: selectedLanguage);
-      _statusMessage = null;
-    });
-  }
-
-  Future<void> _selectTranslationMode(AiSettings settings) async {
-    final selectedMode = await showModalBottomSheet<AiTranslationMode>(
-      context: context,
-      useSafeArea: true,
-      builder: (context) {
-        return Material(
-          color: context.hpColors.paper,
-          child: ListView.separated(
-            shrinkWrap: true,
-            itemCount: AiTranslationMode.values.length,
-            separatorBuilder: (_, _) => const HpDivider(),
-            itemBuilder: (context, index) {
-              final mode = AiTranslationMode.values[index];
-              final isSelected = mode == settings.translationMode;
-              return ListTile(
-                title: Text(mode.label),
-                subtitle: Text(mode.description),
-                trailing: isSelected ? const Icon(Icons.check) : null,
-                onTap: () => Navigator.of(context).pop(mode),
-              );
-            },
-          ),
-        );
-      },
-    );
-
-    if (!mounted ||
-        selectedMode == null ||
-        selectedMode == settings.translationMode) {
-      return;
-    }
-
-    setState(() {
-      _settings = settings.copyWith(translationMode: selectedMode);
-      _statusMessage = null;
-    });
-  }
-
-  Future<void> _saveSettings() async {
-    final current = _settings;
-    if (current == null || _formKey.currentState?.validate() != true) return;
-
-    setState(() {
-      _isSaving = true;
-      _statusMessage = null;
-    });
-
-    final provider = AiProviders.definitionFor(current.providerId);
-    final settings = current.copyWith(baseUrl: provider.defaultBaseUrl);
-    final repository = context.read<AiSettingsRepository>();
-
-    try {
-      await repository.save(
-        settings,
-        apiKeyReplacement: _apiKeyController.text,
-      );
-      final reloaded = await repository.load(providerId: settings.providerId);
-      if (!mounted) return;
-      setState(() {
-        _applySettings(reloaded);
-        _isSaving = false;
-        _statusMessage = 'Saved.';
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _isSaving = false;
-        _statusMessage = error.toString();
-      });
-    }
-  }
-
-  Future<void> _clearApiKey() async {
-    final current = _settings;
-    if (current == null) return;
-
-    setState(() {
-      _isSaving = true;
-      _statusMessage = null;
-    });
-    final repository = context.read<AiSettingsRepository>();
-
-    try {
-      await repository.clearApiKey(current.providerId);
-      final reloaded = await repository.load(providerId: current.providerId);
-      if (!mounted) return;
-      setState(() {
-        _applySettings(reloaded);
-        _isSaving = false;
-        _statusMessage = 'Key cleared.';
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _isSaving = false;
-        _statusMessage = error.toString();
-      });
-    }
-  }
-}
-
-class _ApiKeyStatusBanner extends StatelessWidget {
-  const _ApiKeyStatusBanner({
-    required this.hasApiKey,
-    required this.isSaving,
-    required this.onClear,
-  });
-
-  final bool hasApiKey;
-  final bool isSaving;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.hpColors;
-    final activeColor = colors.brand;
-    final statusColor = hasApiKey ? activeColor : colors.inkMuted;
-    final backgroundColor = hasApiKey
-        ? activeColor.withValues(alpha: 0.1)
-        : colors.surfaceMuted.withValues(alpha: 0.58);
-    final borderColor = hasApiKey
-        ? activeColor.withValues(alpha: 0.64)
-        : colors.rule;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        border: Border.all(color: borderColor),
-        borderRadius: context.hpRadii.medium,
+          );
+        },
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(11, 9, 8, 9),
+    );
+  }
+
+  Widget _buildDesktop(BuildContext context) {
+    final colors = context.hpColors;
+    final text = Theme.of(context).textTheme;
+    return Scaffold(
+      body: SafeArea(
         child: Row(
           children: [
-            DecoratedBox(
+            Container(
+              width: 176,
               decoration: BoxDecoration(
-                color: hasApiKey ? activeColor : Colors.transparent,
-                border: Border.all(color: statusColor),
-                borderRadius: context.hpRadii.small,
+                color: colors.surface,
+                border: Border(right: BorderSide(color: colors.rule)),
               ),
-              child: SizedBox.square(
-                dimension: 24,
-                child: Icon(
-                  hasApiKey ? Icons.lock_outline : Icons.lock_open_outlined,
-                  size: 16,
-                  color: hasApiKey ? colors.surface : statusColor,
-                ),
+              child: ListView(
+                padding: const EdgeInsets.all(12),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
+                    child: Text('Settings', style: text.titleMedium),
+                  ),
+                  for (final category in _SettingsCategory.values)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: ListTile(
+                        key: ValueKey('settings-category-${category.name}'),
+                        dense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                        ),
+                        minLeadingWidth: 20,
+                        horizontalTitleGap: 12,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        selected: _category == category,
+                        selectedTileColor: colors.brand.withValues(alpha: 0.12),
+                        selectedColor: colors.brand,
+                        leading: Icon(switch (category) {
+                          _SettingsCategory.ai => Icons.auto_awesome_outlined,
+                          _SettingsCategory.translation => Icons.translate,
+                          _SettingsCategory.privacy => Icons.shield_outlined,
+                        }, size: 18),
+                        title: Text(_categoryTitle(category)),
+                        onTap: () => setState(() => _category = category),
+                      ),
+                    ),
+                ],
               ),
             ),
-            const SizedBox(width: 10),
             Expanded(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    hasApiKey ? 'API key saved' : 'No API key saved',
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: hasApiKey ? activeColor : colors.inkMuted,
-                      fontWeight: FontWeight.w800,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                    child: Text(
+                      _categoryTitle(_category),
+                      style: text.titleLarge,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    hasApiKey
-                        ? 'This provider already has an API key.'
-                        : 'Add a key to enable AI actions.',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: colors.inkMuted),
+                  Expanded(
+                    child: _category == _SettingsCategory.privacy
+                        ? const PrivacyPolicyBody()
+                        : FutureBuilder<AiSettings>(
+                            future: _initialSettings,
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState !=
+                                  ConnectionState.done) {
+                                return const HpLoadingView(
+                                  label: 'Loading settings',
+                                );
+                              }
+                              final settings = _settings ?? snapshot.data;
+                              if (settings == null) {
+                                return const Center(
+                                  child: Text('Failed to load settings.'),
+                                );
+                              }
+                              return ListView(
+                                padding: const EdgeInsets.fromLTRB(
+                                  24,
+                                  0,
+                                  24,
+                                  24,
+                                ),
+                                children: [
+                                  if (_category == _SettingsCategory.ai)
+                                    ..._desktopAiControls(settings)
+                                  else
+                                    ..._desktopTranslationControls(settings),
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 24),
+                                    child: Text(
+                                      _isSaving
+                                          ? 'Saving…'
+                                          : 'Changes are saved automatically.',
+                                      style: text.bodySmall?.copyWith(
+                                        color: colors.inkMuted,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
                   ),
                 ],
               ),
             ),
-            if (hasApiKey) ...[
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: isSaving ? null : onClear,
-                child: const Text('Clear'),
-              ),
-            ],
           ],
         ),
       ),
     );
   }
-}
 
-class _SettingsActionRow extends StatelessWidget {
-  const _SettingsActionRow({
-    required this.title,
-    required this.value,
-    required this.enabled,
-    required this.onTap,
-    this.subtitle,
-  });
-
-  final String title;
-  final String value;
-  final String? subtitle;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.hpColors;
-
-    return InkWell(
-      onTap: enabled ? onTap : null,
-      borderRadius: context.hpRadii.medium,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: colors.surface,
-          border: Border.all(color: colors.rule),
-          borderRadius: context.hpRadii.medium,
+  List<Widget> _desktopAiControls(AiSettings settings) {
+    final provider = _providers.firstWhere(
+      (provider) => provider.id == settings.providerId,
+      orElse: () => AiProviders.definitionFor(settings.providerId),
+    );
+    return [
+      Text('Active model', style: Theme.of(context).textTheme.titleSmall),
+      const SizedBox(height: 10),
+      Row(
+        spacing: 12,
+        children: [
+          Expanded(
+            child: Text(
+              settings.hasApiKey && settings.model.isNotEmpty
+                  ? '${provider.label} · ${settings.model}'
+                  : 'Not selected',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+          OutlinedButton(
+            onPressed: _isSaving ? null : () => _selectModel(settings),
+            child: const Text('Choose model…'),
+          ),
+        ],
+      ),
+      const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: HpDivider(),
+      ),
+      Text('Providers & keys', style: Theme.of(context).textTheme.titleSmall),
+      Padding(
+        padding: const EdgeInsets.only(top: 8, bottom: 16),
+        child: Text(
+          'One API key per provider. Keys are stored locally.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: context.hpColors.inkMuted),
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      ),
+      for (final provider in _providers)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
+            spacing: 12,
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 4,
                   children: [
+                    Text(provider.label),
                     Text(
-                      title,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: colors.inkMuted),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      value,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: enabled ? colors.ink : colors.inkSubtle,
+                      _maskedKeys[provider.id] ?? 'No key saved',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: context.hpColors.inkMuted,
                       ),
                     ),
-                    if (subtitle case final subtitle?) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: colors.inkMuted),
-                      ),
-                    ],
                   ],
                 ),
               ),
-              Icon(Icons.expand_more, color: colors.inkMuted),
+              OutlinedButton(
+                key: ValueKey('settings-key-${provider.id.storageKey}'),
+                onPressed: _isSaving ? null : () => _editDesktopKey(provider),
+                child: Text(
+                  _maskedKeys[provider.id] == null ? 'Add key…' : 'Edit key…',
+                ),
+              ),
             ],
           ),
         ),
+    ];
+  }
+
+  List<Widget> _desktopTranslationControls(AiSettings settings) => [
+    DropdownButtonFormField<String>(
+      key: ValueKey('settings-language-${settings.targetLanguage}'),
+      initialValue: settings.targetLanguage,
+      isExpanded: true,
+      decoration: const InputDecoration(labelText: 'Language'),
+      items: [
+        for (final language in AiLanguage.common)
+          DropdownMenuItem(value: language, child: Text(language)),
+      ],
+      onChanged: _isSaving
+          ? null
+          : (language) {
+              if (language != null && language != settings.targetLanguage) {
+                _save(settings.copyWith(targetLanguage: language));
+              }
+            },
+    ),
+    const SizedBox(height: 24),
+    DropdownButtonFormField<AiTranslationMode>(
+      key: ValueKey('settings-display-${settings.translationMode.name}'),
+      initialValue: settings.translationMode,
+      isExpanded: true,
+      decoration: const InputDecoration(labelText: 'Translation display'),
+      items: [
+        for (final mode in AiTranslationMode.values)
+          DropdownMenuItem(value: mode, child: Text(mode.label)),
+      ],
+      onChanged: _isSaving
+          ? null
+          : (mode) {
+              if (mode != null && mode != settings.translationMode) {
+                _save(settings.copyWith(translationMode: mode));
+              }
+            },
+    ),
+    Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Text(
+        settings.translationMode.description,
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: context.hpColors.inkMuted),
+      ),
+    ),
+  ];
+
+  Future<void> _editDesktopKey(AiProviderDefinition provider) async {
+    await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ApiKeyPage(
+        provider: provider,
+        maskedKey: _maskedKeys[provider.id],
+        repository: context.read<AiSettingsRepository>(),
+        desktop: true,
       ),
     );
+    try {
+      final updated = await _loadSettings();
+      if (mounted) setState(() => _settings = updated);
+    } catch (_) {
+      if (mounted) _showSaveError();
+    }
+  }
+
+  static String _categoryTitle(_SettingsCategory category) =>
+      switch (category) {
+        _SettingsCategory.ai => 'AI',
+        _SettingsCategory.translation => 'Translation',
+        _SettingsCategory.privacy => 'Privacy',
+      };
+
+  Future<void> _saveReadingPreference(bool enabled) async {
+    setState(() => _isSavingReading = true);
+    try {
+      await context
+          .read<ReadingPreferencesCubit>()
+          .setExtendPageBehindStatusBar(enabled);
+    } catch (_) {
+      if (mounted) _showSaveError();
+    } finally {
+      if (mounted) setState(() => _isSavingReading = false);
+    }
+  }
+
+  Future<T?> _choose<T>({
+    required String title,
+    required T selected,
+    required List<T> values,
+    required String Function(T) label,
+    String Function(T)? description,
+    bool Function(T)? enabled,
+    Future<List<T>> Function()? loadValues,
+  }) {
+    if (widget.desktop) {
+      return showDialog<T>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: context.hpColors.paper,
+          title: Text(title),
+          contentPadding: const EdgeInsets.fromLTRB(6, 20, 6, 0),
+          content: SizedBox(
+            width: 440,
+            height: MediaQuery.sizeOf(context).height * 0.55,
+            child: SettingsChoices<T>(
+              values: values,
+              selected: selected,
+              label: label,
+              description: description,
+              enabled: enabled,
+              loadValues: loadValues,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      );
+    }
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      backgroundColor: context.hpColors.paper,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      constraints: BoxConstraints(
+        maxWidth: settingsContentWidth,
+        maxHeight: MediaQuery.sizeOf(context).height * 0.78,
+      ),
+      builder: (context) => SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 12, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  HpIconButton(
+                    tooltip: 'Close',
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: Icons.close,
+                  ),
+                ],
+              ),
+            ),
+            Flexible(
+              child: SettingsChoices<T>(
+                values: values,
+                selected: selected,
+                label: label,
+                description: description,
+                enabled: enabled,
+                loadValues: loadValues,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectModel(AiSettings settings) async {
+    final repository = context.read<AiSettingsRepository>();
+    setState(() => _isSaving = true);
+    try {
+      final providers = await repository.loadProviders();
+      final configured = <AiProviderDefinition>[];
+      for (final provider in providers) {
+        if ((await repository.readApiKey(provider.id))?.isNotEmpty == true) {
+          configured.add(provider);
+        }
+      }
+      if (!mounted) return;
+      if (configured.isEmpty) {
+        await _editApiKey(settings);
+        return;
+      }
+      final selected = await _choose<AiProviderId>(
+        title: 'Choose provider',
+        selected: settings.providerId,
+        values: configured.map((provider) => provider.id).toList(),
+        label: (id) =>
+            configured.firstWhere((provider) => provider.id == id).label,
+        description: (_) => 'API key saved',
+      );
+      if (!mounted || selected == null) return;
+      final next = await repository.load(providerId: selected);
+      if (!mounted) return;
+      final model = await _choose<String>(
+        title: 'Choose model',
+        selected: next.model,
+        values: const [],
+        loadValues: () => repository.loadModels(selected),
+        label: (model) => model,
+      );
+      if (!mounted || model == null) return;
+      _providers = providers;
+      await _save(
+        next.copyWith(
+          model: model,
+          targetLanguage: settings.targetLanguage,
+          translationMode: settings.translationMode,
+        ),
+      );
+    } catch (_) {
+      if (mounted) _showSaveError();
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _save(AiSettings settings) async {
+    if (!mounted) return;
+    setState(() => _isSaving = true);
+    try {
+      await context.read<AiSettingsRepository>().save(settings);
+      if (mounted) setState(() => _settings = settings);
+    } catch (_) {
+      if (mounted) _showSaveError();
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  void _showSaveError() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Could not save changes. Please try again.'),
+      ),
+    );
+  }
+
+  Future<void> _editApiKey(AiSettings settings) async {
+    if (widget.desktop) {
+      final selected = await _choose<AiProviderId>(
+        title: 'Choose key provider',
+        selected: settings.providerId,
+        values: _providers.map((provider) => provider.id).toList(),
+        label: (id) =>
+            _providers.firstWhere((provider) => provider.id == id).label,
+      );
+      if (mounted && selected != null) {
+        await _editDesktopKey(
+          _providers.firstWhere((provider) => provider.id == selected),
+        );
+      }
+      return;
+    }
+    final repository = context.read<AiSettingsRepository>();
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => ApiKeysPage(
+          activeProvider: settings.hasApiKey && settings.model.isNotEmpty
+              ? settings.providerId
+              : null,
+          repository: repository,
+        ),
+      ),
+    );
+    try {
+      final updated = await _loadSettings();
+      if (mounted) setState(() => _settings = updated);
+    } catch (_) {
+      if (mounted) _showSaveError();
+    }
   }
 }

@@ -34,7 +34,6 @@ void main() {
     expect(await service.getStoryIdsByType(StoryType.best), [4]);
     expect(await service.getStoryIdsByType(StoryType.ask), [5]);
     expect(await service.getStoryIdsByType(StoryType.show), [6]);
-    expect(await service.getStoryIdsByType(StoryType.job), [7]);
   });
 
   test(
@@ -67,7 +66,6 @@ String _responseFor(String path) {
     '/v0/beststories.json' => '[4]',
     '/v0/askstories.json' => '[5]',
     '/v0/showstories.json' => '[6]',
-    '/v0/jobstories.json' => '[7]',
     _ => 'null',
   };
 }

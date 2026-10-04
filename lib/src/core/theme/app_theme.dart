@@ -13,5 +13,5 @@ class AppTheme {
 
   static ThemeData light() => HpTheme.light();
 
-  static ThemeData dark() => HpTheme.light();
+  static ThemeData dark() => HpTheme.dark();
 }

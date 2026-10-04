@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hacker_pen/src/core/design_system/design_system.dart';
 import 'package:hacker_pen/src/core/ai/ai_translation_mode.dart';
 import 'package:hacker_pen/src/core/domain/hn_item.dart';
 import 'package:hacker_pen/src/core/theme/app_theme.dart';
@@ -56,7 +57,7 @@ void main() {
     );
 
     expect(find.text('original comment'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(HpActivityIndicator), findsOneWidget);
   });
 
   testWidgets('replaces original comment text after translation succeeds', (

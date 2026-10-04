@@ -14,11 +14,12 @@ class HnApiService {
 
   final ApiClient _apiClient;
 
-  Future<HnItem> getItem(int id) async {
+  Future<HnItem> getItem(int id, {bool forceRefresh = false}) async {
     final json = await _apiClient.getJson<Map<String, dynamic>>(
       queryKey: HnQueryKeys.item(id),
       path: '/item/$id.json',
       decode: _decodeMap('/item/$id.json'),
+      forceRefresh: forceRefresh,
     );
     return HnItem.fromJson(json);
   }
@@ -50,8 +51,6 @@ class HnApiService {
 
   Future<List<int>> getShowStories() => _getStoryIds(type: StoryType.show);
 
-  Future<List<int>> getJobStories() => _getStoryIds(type: StoryType.job);
-
   Future<HnUpdates> getUpdates() async {
     final json = await _apiClient.getJson<Map<String, dynamic>>(
       queryKey: HnQueryKeys.updates,
@@ -61,7 +60,14 @@ class HnApiService {
     return HnUpdates.fromJson(json);
   }
 
-  Future<List<int>> getStoryIdsByType(StoryType type) {
+  Future<List<int>> getStoryIdsByType(
+    StoryType type, {
+    bool forceRefresh = false,
+  }) {
+    if (forceRefresh) {
+      return _getStoryIds(type: type, forceRefresh: true);
+    }
+
     switch (type) {
       case StoryType.top:
         return getTopStories();
@@ -73,17 +79,19 @@ class HnApiService {
         return getAskStories();
       case StoryType.show:
         return getShowStories();
-      case StoryType.job:
-        return getJobStories();
     }
   }
 
-  Future<List<int>> _getStoryIds({required StoryType type}) {
+  Future<List<int>> _getStoryIds({
+    required StoryType type,
+    bool forceRefresh = false,
+  }) {
     final path = type.endpointPath;
     return _apiClient.getJson<List<int>>(
       queryKey: HnQueryKeys.storyIds(type),
       path: path,
       decode: _decodeIntList(path),
+      forceRefresh: forceRefresh,
     );
   }
 

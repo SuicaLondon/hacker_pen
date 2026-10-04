@@ -25,7 +25,7 @@ void main() {
 
 class _FakeHnApiService extends HnApiService {
   @override
-  Future<HnItem> getItem(int id) async {
+  Future<HnItem> getItem(int id, {bool forceRefresh = false}) async {
     return switch (id) {
       1 => const HnItem(
         id: 1,

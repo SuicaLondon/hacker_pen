@@ -14,8 +14,30 @@ class ItemDetailCubit extends Cubit<ItemDetailState> {
 
   final ItemDetailRepository _repository;
   final AiContentRepository _aiContentRepository;
+  int _storyGeneration = 0;
+  int _commentsGeneration = 0;
+  int _aiGeneration = 0;
+
+  /// Discards results from the previous AI configuration without reloading the
+  /// article or starting another AI request.
+  void invalidateAiResults() {
+    if (isClosed) return;
+    _aiGeneration++;
+    emit(
+      state.copyWith(
+        summaryStatus: ItemDetailAiStatus.idle,
+        summaryText: null,
+        summaryErrorMessage: null,
+        commentTranslations: const {},
+        threadTranslationLoadingIds: const {},
+      ),
+    );
+  }
 
   Future<void> load(int itemId) async {
+    if (isClosed) return;
+    final generation = ++_storyGeneration;
+    final commentsGeneration = ++_commentsGeneration;
     emit(
       state.copyWith(
         requestedItemId: itemId,
@@ -35,6 +57,7 @@ class ItemDetailCubit extends Cubit<ItemDetailState> {
 
     try {
       final story = await _repository.fetchStory(itemId);
+      if (!_isCurrent(generation)) return;
       emit(
         state.copyWith(
           storyStatus: ItemDetailStoryStatus.success,
@@ -45,8 +68,9 @@ class ItemDetailCubit extends Cubit<ItemDetailState> {
         ),
       );
 
-      await _loadCommentsForStory(story);
+      await _loadCommentsForStory(story, generation, commentsGeneration);
     } catch (error) {
+      if (!_isCurrent(generation)) return;
       emit(
         state.copyWith(
           storyStatus: ItemDetailStoryStatus.failure,
@@ -57,10 +81,14 @@ class ItemDetailCubit extends Cubit<ItemDetailState> {
   }
 
   Future<void> reloadComments() async {
+    if (isClosed) return;
     final story = state.story;
     if (story == null) {
       return;
     }
+
+    final generation = _storyGeneration;
+    final commentsGeneration = ++_commentsGeneration;
 
     emit(
       state.copyWith(
@@ -70,10 +98,13 @@ class ItemDetailCubit extends Cubit<ItemDetailState> {
         threadTranslationLoadingIds: const {},
       ),
     );
-    await _loadCommentsForStory(story);
+    await _loadCommentsForStory(story, generation, commentsGeneration);
   }
 
   Future<void> summarizeStory() async {
+    if (isClosed) return;
+    final generation = _storyGeneration;
+    final aiGeneration = _aiGeneration;
     final storyUrl = state.story?.url;
     if (storyUrl == null || storyUrl.isEmpty) {
       emit(
@@ -98,6 +129,7 @@ class ItemDetailCubit extends Cubit<ItemDetailState> {
 
     try {
       final summary = await _aiContentRepository.summarizeWebPageUrl(storyUrl);
+      if (!_isCurrentAi(generation, aiGeneration)) return;
       emit(
         state.copyWith(
           summaryStatus: ItemDetailAiStatus.success,
@@ -106,6 +138,7 @@ class ItemDetailCubit extends Cubit<ItemDetailState> {
         ),
       );
     } catch (error) {
+      if (!_isCurrentAi(generation, aiGeneration)) return;
       emit(
         state.copyWith(
           summaryStatus: ItemDetailAiStatus.failure,
@@ -116,32 +149,35 @@ class ItemDetailCubit extends Cubit<ItemDetailState> {
   }
 
   Future<void> translateComment(HnItem comment) async {
-    final current = state.commentTranslations[comment.id];
-    final mode = await _aiContentRepository.loadTranslationMode();
-    if (current?.status == ItemDetailAiStatus.loading) {
-      return;
-    }
-    if (current?.status == ItemDetailAiStatus.success &&
-        current?.mode == mode) {
+    if (isClosed) return;
+    final generation = _storyGeneration;
+    final aiGeneration = _aiGeneration;
+    final commentsGeneration = _commentsGeneration;
+    try {
+      final mode = await _aiContentRepository.loadTranslationMode();
+      if (!_isCurrentAi(generation, aiGeneration, commentsGeneration)) return;
+      final current = state.commentTranslations[comment.id];
+      if (current?.status == ItemDetailAiStatus.loading) return;
+      if (current?.status == ItemDetailAiStatus.success &&
+          current?.mode == mode) {
+        _setCommentTranslation(
+          comment.id,
+          current!.copyWith(showOriginal: !current.showOriginal),
+        );
+        return;
+      }
+
       _setCommentTranslation(
         comment.id,
-        current!.copyWith(showOriginal: !current.showOriginal),
+        const CommentTranslationState(
+          status: ItemDetailAiStatus.loading,
+          showOriginal: true,
+        ),
       );
-      return;
-    }
-
-    _setCommentTranslation(
-      comment.id,
-      const CommentTranslationState(
-        status: ItemDetailAiStatus.loading,
-        showOriginal: true,
-      ),
-    );
-
-    try {
       final translation = await _aiContentRepository.translateComment(
         comment.text ?? '',
       );
+      if (!_isCurrentAi(generation, aiGeneration, commentsGeneration)) return;
       _setCommentTranslation(
         comment.id,
         CommentTranslationState(
@@ -152,6 +188,7 @@ class ItemDetailCubit extends Cubit<ItemDetailState> {
         ),
       );
     } catch (error) {
+      if (!_isCurrentAi(generation, aiGeneration, commentsGeneration)) return;
       _setCommentTranslation(
         comment.id,
         CommentTranslationState(
@@ -163,10 +200,14 @@ class ItemDetailCubit extends Cubit<ItemDetailState> {
   }
 
   Future<void> translateCommentChildren(CommentNode node) async {
-    if (node.children.isEmpty ||
+    if (isClosed ||
+        node.children.isEmpty ||
         state.threadTranslationLoadingIds.contains(node.comment.id)) {
       return;
     }
+    final generation = _storyGeneration;
+    final aiGeneration = _aiGeneration;
+    final commentsGeneration = _commentsGeneration;
 
     emit(
       state.copyWith(
@@ -180,33 +221,53 @@ class ItemDetailCubit extends Cubit<ItemDetailState> {
     final descendants = <HnItem>[
       for (final child in node.children) ..._flattenComments(child),
     ];
-    final mode = await _aiContentRepository.loadTranslationMode();
-
-    await Future.wait(
-      descendants
-          .where((comment) {
-            final translation = state.commentTranslations[comment.id];
-            return translation?.status != ItemDetailAiStatus.loading &&
-                (translation?.status != ItemDetailAiStatus.success ||
-                    translation?.mode != mode) &&
-                TextSanitizer.stripHtml(comment.text).isNotEmpty;
-          })
-          .map(translateComment),
-    );
-
-    emit(
-      state.copyWith(
-        threadTranslationLoadingIds: {
-          for (final id in state.threadTranslationLoadingIds)
-            if (id != node.comment.id) id,
-        },
-      ),
-    );
+    try {
+      final mode = await _aiContentRepository.loadTranslationMode();
+      if (!_isCurrentAi(generation, aiGeneration, commentsGeneration)) return;
+      await Future.wait(
+        descendants
+            .where((comment) {
+              final translation = state.commentTranslations[comment.id];
+              return translation?.status != ItemDetailAiStatus.loading &&
+                  (translation?.status != ItemDetailAiStatus.success ||
+                      translation?.mode != mode) &&
+                  TextSanitizer.stripHtml(comment.text).isNotEmpty;
+            })
+            .map(translateComment),
+      );
+    } catch (error) {
+      if (!_isCurrentAi(generation, aiGeneration, commentsGeneration)) return;
+      for (final comment in descendants) {
+        _setCommentTranslation(
+          comment.id,
+          CommentTranslationState(
+            status: ItemDetailAiStatus.failure,
+            errorMessage: _errorMessage(error),
+          ),
+        );
+      }
+    } finally {
+      if (_isCurrentAi(generation, aiGeneration, commentsGeneration)) {
+        emit(
+          state.copyWith(
+            threadTranslationLoadingIds: {
+              for (final id in state.threadTranslationLoadingIds)
+                if (id != node.comment.id) id,
+            },
+          ),
+        );
+      }
+    }
   }
 
-  Future<void> _loadCommentsForStory(HnItem story) async {
+  Future<void> _loadCommentsForStory(
+    HnItem story,
+    int generation,
+    int commentsGeneration,
+  ) async {
     try {
       final comments = await _repository.fetchCommentsForStory(story);
+      if (!_isCurrent(generation, commentsGeneration)) return;
       emit(
         state.copyWith(
           commentsStatus: ItemDetailCommentsStatus.success,
@@ -214,6 +275,7 @@ class ItemDetailCubit extends Cubit<ItemDetailState> {
         ),
       );
     } catch (error) {
+      if (!_isCurrent(generation, commentsGeneration)) return;
       emit(
         state.copyWith(
           commentsStatus: ItemDetailCommentsStatus.failure,
@@ -221,6 +283,22 @@ class ItemDetailCubit extends Cubit<ItemDetailState> {
         ),
       );
     }
+  }
+
+  bool _isCurrent(int generation, [int? commentsGeneration]) {
+    return !isClosed &&
+        generation == _storyGeneration &&
+        (commentsGeneration == null ||
+            commentsGeneration == _commentsGeneration);
+  }
+
+  bool _isCurrentAi(
+    int generation,
+    int aiGeneration, [
+    int? commentsGeneration,
+  ]) {
+    return _isCurrent(generation, commentsGeneration) &&
+        aiGeneration == _aiGeneration;
   }
 
   void _setCommentTranslation(int commentId, CommentTranslationState next) {

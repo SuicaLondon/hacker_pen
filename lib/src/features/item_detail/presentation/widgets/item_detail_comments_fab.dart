@@ -34,13 +34,7 @@ class ItemDetailCommentsFab extends StatelessWidget {
             spacing: 8,
             children: [
               if (isLoading)
-                SizedBox.square(
-                  dimension: 16,
-                  child: CircularProgressIndicator(
-                    color: colors.inkMuted,
-                    strokeWidth: 2,
-                  ),
-                )
+                const HpActivityIndicator(size: 16)
               else
                 Icon(
                   Icons.mode_comment_outlined,
@@ -48,7 +42,7 @@ class ItemDetailCommentsFab extends StatelessWidget {
                   color: colors.brand,
                 ),
               Text(
-                isLoading ? 'Loading $count' : '$count comments',
+                isLoading ? 'LOADING $count' : '$count COMMENTS',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   color: onPressed == null ? colors.inkSubtle : colors.ink,
                 ),

@@ -5,8 +5,22 @@ import 'hp_tokens.dart';
 class HpTheme {
   const HpTheme._();
 
-  static ThemeData light() {
-    const colors = HpColors.light;
+  static ThemeData light() =>
+      _build(colors: HpColors.light, brightness: Brightness.light);
+
+  static ThemeData dark() => _build(
+    colors: HpColors.dark,
+    brightness: Brightness.dark,
+    removesMaterialSplash: true,
+  );
+
+  static ThemeData feedDark() => dark();
+
+  static ThemeData _build({
+    required HpColors colors,
+    required Brightness brightness,
+    bool removesMaterialSplash = false,
+  }) {
     const typography = HpTypography.light;
 
     final baseTextTheme =
@@ -92,23 +106,38 @@ class HpTheme {
       borderSide: BorderSide(color: colors.rule),
     );
 
-    return ThemeData(
+    final colorScheme = brightness == Brightness.dark
+        ? ColorScheme.dark(
+            primary: colors.brand,
+            secondary: colors.brand,
+            surface: colors.surface,
+            onSurface: colors.ink,
+            onSurfaceVariant: colors.inkMuted,
+            outline: colors.rule,
+            outlineVariant: colors.ruleStrong,
+            error: colors.danger,
+          )
+        : ColorScheme.light(
+            primary: colors.brand,
+            secondary: colors.brand,
+            surface: colors.surface,
+            onSurface: colors.ink,
+            onSurfaceVariant: colors.inkMuted,
+            outline: colors.rule,
+            outlineVariant: colors.ruleStrong,
+            error: colors.danger,
+          );
+
+    final theme = ThemeData(
       useMaterial3: false,
       fontFamily: typography.textFamily,
-      brightness: Brightness.light,
+      brightness: brightness,
       scaffoldBackgroundColor: colors.paper,
+      canvasColor: colors.paper,
+      cardColor: colors.surface,
       dividerColor: colors.rule,
       textTheme: baseTextTheme,
-      colorScheme: ColorScheme.light(
-        primary: colors.brand,
-        secondary: colors.brand,
-        surface: colors.surface,
-        onSurface: colors.ink,
-        onSurfaceVariant: colors.inkMuted,
-        outline: colors.rule,
-        outlineVariant: colors.ruleStrong,
-        error: colors.danger,
-      ),
+      colorScheme: colorScheme,
       appBarTheme: AppBarTheme(
         backgroundColor: colors.paper,
         foregroundColor: colors.ink,
@@ -200,13 +229,22 @@ class HpTheme {
         thickness: 0.75,
         space: 0.75,
       ),
-      extensions: const [
+      extensions: <ThemeExtension<dynamic>>[
         colors,
         typography,
         HpSpacing.standard,
         HpRadii.standard,
         HpBorders.standardBorders,
       ],
+    );
+
+    if (!removesMaterialSplash) return theme;
+
+    return theme.copyWith(
+      splashFactory: NoSplash.splashFactory,
+      highlightColor: colors.brand.withValues(alpha: 0.08),
+      hoverColor: colors.brand.withValues(alpha: 0.06),
+      focusColor: colors.brand.withValues(alpha: 0.1),
     );
   }
 }

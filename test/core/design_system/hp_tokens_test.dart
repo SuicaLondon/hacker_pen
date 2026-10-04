@@ -33,6 +33,7 @@ void main() {
 
   test('AppTheme compatibility wrapper delegates to HpTheme', () {
     expect(AppTheme.light().colorScheme.primary, HpColors.light.brand);
-    expect(AppTheme.dark().scaffoldBackgroundColor, HpColors.light.paper);
+    expect(AppTheme.dark().brightness, Brightness.dark);
+    expect(AppTheme.dark().scaffoldBackgroundColor, HpColors.dark.paper);
   });
 }

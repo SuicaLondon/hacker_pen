@@ -33,7 +33,11 @@
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="VOq-y0-SEH"/>
-                            <menuItem title="Preferences…" keyEquivalent="," id="BOF-NM-1cW"/>
+                            <menuItem title="Settings…" keyEquivalent="," id="BOF-NM-1cW">
+                                <connections>
+                                    <action selector="showSettings:" target="Voe-Tx-rLC" id="hp-settings-action"/>
+                                </connections>
+                            </menuItem>
                             <menuItem isSeparatorItem="YES" id="wFC-TO-SCJ"/>
                             <menuItem title="Services" id="NMo-om-nkz">
                                 <modifierMask key="keyEquivalentModifierMask"/>
@@ -61,6 +65,18 @@
                             <menuItem title="Quit APP_NAME" keyEquivalent="q" id="4sb-4s-VLi">
                                 <connections>
                                     <action selector="terminate:" target="-1" id="Te7-pn-YzF"/>
+                                </connections>
+                            </menuItem>
+                        </items>
+                    </menu>
+                </menuItem>
+                <menuItem title="File" id="hp-file-menu-item">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <menu key="submenu" title="File" id="hp-file-menu">
+                        <items>
+                            <menuItem title="Close Window" keyEquivalent="w" id="hp-close-window">
+                                <connections>
+                                    <action selector="performClose:" target="-1" id="hp-close-window-action"/>
                                 </connections>
                             </menuItem>
                         </items>
@@ -289,6 +305,27 @@
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <menu key="submenu" title="View" id="HyV-fh-RgO">
                         <items>
+                            <menuItem title="Toggle News Sidebar" keyEquivalent="b" id="hp-toggle-news">
+                                <connections>
+                                    <action selector="toggleNewsSidebar:" target="Voe-Tx-rLC" id="hp-toggle-news-action"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Toggle Inspector" keyEquivalent="B" id="hp-toggle-inspector">
+                                <connections>
+                                    <action selector="toggleInspector:" target="Voe-Tx-rLC" id="hp-toggle-inspector-action"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Refresh News" keyEquivalent="r" id="hp-refresh-news">
+                                <connections>
+                                    <action selector="refreshNews:" target="Voe-Tx-rLC" id="hp-refresh-news-action"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Back" keyEquivalent="[" id="hp-go-back">
+                                <connections>
+                                    <action selector="goBack:" target="Voe-Tx-rLC" id="hp-go-back-action"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem isSeparatorItem="YES" id="hp-view-separator"/>
                             <menuItem title="Enter Full Screen" keyEquivalent="f" id="4J7-dP-txa">
                                 <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
                                 <connections>

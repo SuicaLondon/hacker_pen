@@ -13,11 +13,17 @@ class ItemsRepository {
   Future<List<HnItem>> fetchItems({
     StoryType storyType = StoryType.top,
     int limit = 20,
+    bool forceRefresh = false,
   }) async {
-    final ids = await _apiService.getStoryIdsByType(storyType);
+    final ids = await _apiService.getStoryIdsByType(
+      storyType,
+      forceRefresh: forceRefresh,
+    );
     final targetIds = ids.take(limit);
 
-    final futures = targetIds.map(_apiService.getItem);
+    final futures = targetIds.map(
+      (id) => _apiService.getItem(id, forceRefresh: forceRefresh),
+    );
     final items = await Future.wait(futures);
 
     return items.where((item) => item.isStory).toList(growable: false);
