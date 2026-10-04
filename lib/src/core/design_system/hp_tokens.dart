@@ -32,6 +32,23 @@ class HpColors extends ThemeExtension<HpColors> {
     danger: Color(0xFFB3261E),
   );
 
+  static const dark = HpColors(
+    paper: Color(0xFF0A0A0A),
+    paperAlt: Color(0xFF0B0F0C),
+    surface: Color(0xFF101312),
+    surfaceMuted: Color(0xFF171A18),
+    highlight: Color(0xFF0C2115),
+    ink: Color(0xFFF2F4F0),
+    inkMuted: Color(0xFFA8A79F),
+    inkSubtle: Color(0xFF686D68),
+    rule: Color(0xFF393832),
+    ruleStrong: Color(0xFFA3A198),
+    brand: Color(0xFF00BC52),
+    danger: Color(0xFFFF6B6B),
+  );
+
+  static const feedDark = dark;
+
   final Color paper;
   final Color paperAlt;
   final Color surface;

@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'hp_tokens.dart';
 
@@ -37,6 +39,64 @@ class HpMetaText extends StatelessWidget {
   }
 }
 
+class HpActivityIndicator extends StatelessWidget {
+  const HpActivityIndicator({this.size = 18, this.progress, super.key});
+
+  final double size;
+  final double? progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = progress;
+    if (value != null) {
+      return CupertinoActivityIndicator.partiallyRevealed(
+        radius: size / 2,
+        color: context.hpColors.brand,
+        progress: value.clamp(0.0, 1.0),
+      );
+    }
+    return CupertinoActivityIndicator(
+      radius: size / 2,
+      color: context.hpColors.brand,
+      animating: !MediaQuery.disableAnimationsOf(context),
+    );
+  }
+}
+
+class HpLoadingView extends StatelessWidget {
+  const HpLoadingView({required this.label, super.key});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.hpColors;
+
+    return Center(
+      child: Semantics(
+        label: label,
+        liveRegion: true,
+        excludeSemantics: true,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 14,
+          children: [
+            const HpActivityIndicator(),
+            Text(
+              label.toUpperCase(),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: colors.inkMuted,
+                fontFamily: context.hpText.monoFamily,
+                letterSpacing: 1.4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class HpIconButton extends StatelessWidget {
   const HpIconButton({
     required this.icon,
@@ -59,7 +119,7 @@ class HpIconButton extends StatelessWidget {
         onTap: onPressed,
         borderRadius: context.hpRadii.small,
         child: SizedBox.square(
-          dimension: 38,
+          dimension: 44,
           child: Icon(
             icon,
             color: onPressed == null ? colors.inkSubtle : colors.inkMuted,
@@ -91,49 +151,61 @@ class HpTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.hpColors;
     final topInset = MediaQuery.paddingOf(context).top;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.paper.withValues(alpha: 0.96),
-        border: Border(bottom: BorderSide(color: colors.rule)),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: colors.paper,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
       ),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(12, topInset + 8, 8, 8),
-        child: Row(
-          children: [
-            if (leading != null) ...[leading!, const SizedBox(width: 6)],
-            if (showMark) ...[const _HpMark(), const SizedBox(width: 9)],
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontFamily: context.hpText.displayFamily,
-                      color: colors.ink,
-                      fontWeight: FontWeight.w800,
-                    ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.paper.withValues(alpha: 0.96),
+          border: Border(bottom: BorderSide(color: colors.rule)),
+        ),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(8, topInset, 8, 0),
+          child: SizedBox(
+            height: 52,
+            child: Row(
+              spacing: 6,
+              children: [
+                ?leading,
+                if (showMark) const _HpMark(),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    spacing: 2,
+                    children: [
+                      Text(
+                        title.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          fontFamily: context.hpText.monoFamily,
+                          color: colors.ink,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      if (subtitle case final subtitle?) HpMetaText(subtitle),
+                    ],
                   ),
-                  if (subtitle case final subtitle?) ...[
-                    const SizedBox(height: 2),
-                    HpMetaText(subtitle),
-                  ],
-                ],
-              ),
+                ),
+                ?trailing,
+              ],
             ),
-            ?trailing,
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class HpSegmentTabs extends StatelessWidget {
+class HpSegmentTabs extends StatefulWidget {
   const HpSegmentTabs({
     required this.tabs,
     required this.selectedIndex,
@@ -146,40 +218,114 @@ class HpSegmentTabs extends StatelessWidget {
   final ValueChanged<int> onSelected;
 
   @override
+  State<HpSegmentTabs> createState() => _HpSegmentTabsState();
+}
+
+class _HpSegmentTabsState extends State<HpSegmentTabs> {
+  final _scroll = ScrollController();
+  double _itemWidth = 0;
+
+  @override
+  void didUpdateWidget(covariant HpSegmentTabs oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedIndex != widget.selectedIndex) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _revealSelection());
+    }
+  }
+
+  void _revealSelection() {
+    if (!mounted || !_scroll.hasClients) return;
+    final left = widget.selectedIndex * _itemWidth;
+    final right = left + _itemWidth;
+    final viewport = _scroll.position.viewportDimension;
+    final target =
+        (left < _scroll.offset
+                ? left
+                : right > _scroll.offset + viewport
+                ? right - viewport
+                : _scroll.offset)
+            .clamp(0.0, _scroll.position.maxScrollExtent);
+    if (target == _scroll.offset) return;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _scroll.jumpTo(target);
+    } else {
+      _scroll.animateTo(
+        target,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = context.hpColors;
 
     return SizedBox(
-      height: 32,
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        scrollDirection: Axis.horizontal,
-        itemCount: tabs.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 16),
-        itemBuilder: (context, index) {
-          final isSelected = selectedIndex == index;
+      height: 52,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final itemWidth = constraints.maxWidth / 5;
+          if (_itemWidth != itemWidth) {
+            _itemWidth = itemWidth;
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => _revealSelection(),
+            );
+          }
 
-          return InkWell(
-            onTap: () => onSelected(index),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  tabs[index],
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: isSelected ? colors.brand : colors.inkMuted,
-                    fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+          return ListView.builder(
+            controller: _scroll,
+            scrollDirection: Axis.horizontal,
+            itemCount: widget.tabs.length,
+            itemExtent: itemWidth,
+            itemBuilder: (context, index) {
+              final isSelected = widget.selectedIndex == index;
+              final label = widget.tabs[index].toUpperCase();
+
+              return Semantics(
+                button: true,
+                selected: isSelected,
+                label: label,
+                excludeSemantics: true,
+                child: InkWell(
+                  onTap: () => widget.onSelected(index),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Text(
+                        label,
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: isSelected ? colors.brand : colors.inkMuted,
+                          fontFamily: context.hpText.monoFamily,
+                          fontSize: 13,
+                          fontWeight: isSelected
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                          height: 1,
+                          letterSpacing: 1.4,
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 160),
+                          curve: Curves.easeOutCubic,
+                          width: 52,
+                          height: 3,
+                          color: isSelected ? colors.brand : Colors.transparent,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 5),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  width: 22,
-                  height: 2,
-                  color: isSelected ? colors.brand : Colors.transparent,
-                ),
-              ],
-            ),
+              );
+            },
           );
         },
       ),
@@ -206,115 +352,62 @@ class HpStoryRowShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.hpColors;
+    final rankLabel = rank.toString().padLeft(2, '0');
 
     return InkWell(
       onTap: onTap,
       child: ColoredBox(
         color: isSelected ? colors.highlight : Colors.transparent,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
           child: IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(
-                  width: 22,
-                  child: Center(
-                    child: Text(
-                      '$rank',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: colors.brand,
-                        fontWeight: FontWeight.w800,
+                  width: 48,
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: Semantics(
+                      label: 'Rank $rank',
+                      excludeSemantics: true,
+                      child: Text(
+                        rankLabel,
+                        textAlign: TextAlign.left,
+                        style: Theme.of(context).textTheme.displaySmall
+                            ?.copyWith(
+                              color: colors.brand,
+                              fontSize: 30,
+                              fontWeight: FontWeight.w700,
+                              height: 1,
+                              letterSpacing: -0.8,
+                            ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Align(alignment: Alignment.topLeft, child: child),
+                VerticalDivider(
+                  width: context.hpBorders.standard,
+                  thickness: context.hpBorders.standard,
+                  color: colors.ruleStrong,
                 ),
-                if (trailing != null) ...[
-                  const SizedBox(width: 10),
-                  Align(alignment: Alignment.topRight, child: trailing!),
-                ],
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 22),
+                    child: Align(alignment: Alignment.topLeft, child: child),
+                  ),
+                ),
+                if (trailing != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12),
+                    child: Align(
+                      alignment: Alignment.topRight,
+                      child: trailing!,
+                    ),
+                  ),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class HpSheetScaffold extends StatelessWidget {
-  const HpSheetScaffold({
-    required this.title,
-    required this.body,
-    this.leading,
-    this.trailing,
-    super.key,
-  });
-
-  final String title;
-  final Widget body;
-  final Widget? leading;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.hpColors;
-
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-      child: ColoredBox(
-        color: colors.paper,
-        child: Column(
-          children: [
-            HpTopBar(title: title, leading: leading, trailing: trailing),
-            Expanded(child: body),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class HpSettingsSection extends StatelessWidget {
-  const HpSettingsSection({
-    required this.title,
-    required this.children,
-    super.key,
-  });
-
-  final String title;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.hpColors;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.surface.withValues(alpha: 0.58),
-        border: Border.all(color: colors.rule),
-        borderRadius: context.hpRadii.medium,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 11, 12, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: colors.brand,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            ...children,
-          ],
         ),
       ),
     );

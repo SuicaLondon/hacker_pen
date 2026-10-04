@@ -37,10 +37,10 @@ void main() {
       ),
     );
 
-    expect(find.text('7'), findsOneWidget);
-    expect(find.text('128'), findsOneWidget);
-    expect(find.text('42'), findsOneWidget);
-    expect(find.textContaining('news.ycombinator.com'), findsOneWidget);
+    expect(find.text('07'), findsOneWidget);
+    expect(find.textContaining('128 PTS · 42 COMMENTS ·'), findsOneWidget);
+    expect(find.textContaining('news.ycombinator.com'), findsNothing);
+    expect(find.byIcon(Icons.mode_comment_outlined), findsNothing);
 
     await tester.tap(find.byType(ItemStoryRow));
     expect(tapped, isTrue);

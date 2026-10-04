@@ -19,14 +19,21 @@ class ApiClient {
     required Object queryKey,
     required String path,
     required JsonDecoder<T> decode,
+    bool forceRefresh = false,
   }) async {
-    final state = await Query<T>(
+    final query = Query<T>(
       key: queryKey,
       queryFn: () async {
         final json = await _getDecodedJson(path);
         return decode(json);
       },
-    ).fetch();
+    );
+    final state = await (forceRefresh ? query.refetch() : query.fetch());
+
+    if (forceRefresh && state is QueryError<T>) {
+      Error.throwWithStackTrace(state.error as Object, state.stackTrace);
+    }
+
     final data = state.data;
 
     if (data != null) return data;

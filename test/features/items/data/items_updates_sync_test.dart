@@ -52,10 +52,13 @@ class _FakeHnApiService extends HnApiService {
   final HnUpdates updates;
 
   @override
-  Future<List<int>> getStoryIdsByType(StoryType type) async => [1, 2, 3];
+  Future<List<int>> getStoryIdsByType(
+    StoryType type, {
+    bool forceRefresh = false,
+  }) async => [1, 2, 3];
 
   @override
-  Future<HnItem> getItem(int id) async {
+  Future<HnItem> getItem(int id, {bool forceRefresh = false}) async {
     return _story(
       id,
       score: id == 1 ? 100 : id,

@@ -1,4 +1,4 @@
-enum StoryType { top, newStories, best, ask, show, job }
+enum StoryType { top, newStories, best, ask, show }
 
 extension StoryTypeMetadata on StoryType {
   static const List<StoryType> homeTabs = <StoryType>[
@@ -7,7 +7,6 @@ extension StoryTypeMetadata on StoryType {
     StoryType.best,
     StoryType.ask,
     StoryType.show,
-    StoryType.job,
   ];
 
   String get label {
@@ -22,8 +21,6 @@ extension StoryTypeMetadata on StoryType {
         return 'Ask';
       case StoryType.show:
         return 'Show';
-      case StoryType.job:
-        return 'Jobs';
     }
   }
 
@@ -39,8 +36,6 @@ extension StoryTypeMetadata on StoryType {
         return '/askstories.json';
       case StoryType.show:
         return '/showstories.json';
-      case StoryType.job:
-        return '/jobstories.json';
     }
   }
 }

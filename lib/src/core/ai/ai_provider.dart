@@ -1,12 +1,12 @@
-enum AiProviderId { openAiCompatible, apiTrust }
+enum AiProviderId { openAiCompatible, anthropic, gemini, apiTrust }
 
 extension AiProviderIdStorage on AiProviderId {
-  String get storageKey {
-    return switch (this) {
-      AiProviderId.openAiCompatible => 'openai_compatible',
-      AiProviderId.apiTrust => 'api_trust',
-    };
-  }
+  String get storageKey => switch (this) {
+    AiProviderId.openAiCompatible => 'openai_compatible',
+    AiProviderId.anthropic => 'anthropic',
+    AiProviderId.gemini => 'gemini',
+    AiProviderId.apiTrust => 'api_trust',
+  };
 
   static AiProviderId fromStorageKey(String? value) {
     return AiProviders.all
@@ -24,7 +24,6 @@ class AiProviderDefinition {
     required this.label,
     required this.defaultBaseUrl,
     required this.defaultModel,
-    required this.models,
     this.isAvailable = true,
   });
 
@@ -32,7 +31,6 @@ class AiProviderDefinition {
   final String label;
   final String defaultBaseUrl;
   final String defaultModel;
-  final List<String> models;
   final bool isAvailable;
 }
 
@@ -41,10 +39,23 @@ class AiProviders {
 
   static const openAiCompatible = AiProviderDefinition(
     id: AiProviderId.openAiCompatible,
-    label: 'OpenAI Compatible',
+    label: 'OpenAI',
     defaultBaseUrl: 'https://api.openai.com/v1',
-    defaultModel: 'gpt-4.1-mini',
-    models: ['gpt-4.1-mini', 'gpt-4.1', 'gpt-4o-mini', 'gpt-4o', 'o4-mini'],
+    defaultModel: '',
+  );
+
+  static const anthropic = AiProviderDefinition(
+    id: AiProviderId.anthropic,
+    label: 'Anthropic',
+    defaultBaseUrl: 'https://api.anthropic.com/v1',
+    defaultModel: '',
+  );
+
+  static const gemini = AiProviderDefinition(
+    id: AiProviderId.gemini,
+    label: 'Gemini',
+    defaultBaseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+    defaultModel: '',
   );
 
   static const apiTrust = AiProviderDefinition(
@@ -52,11 +63,18 @@ class AiProviders {
     label: 'API Trust',
     defaultBaseUrl: '',
     defaultModel: 'auto',
-    models: ['auto'],
     isAvailable: false,
   );
 
-  static const all = <AiProviderDefinition>[openAiCompatible, apiTrust];
+  static const all = <AiProviderDefinition>[
+    openAiCompatible,
+    anthropic,
+    gemini,
+    apiTrust,
+  ];
+
+  static List<AiProviderDefinition> get available =>
+      all.where((provider) => provider.isAvailable).toList(growable: false);
 
   static AiProviderDefinition definitionFor(AiProviderId id) {
     return all.firstWhere((provider) => provider.id == id);
